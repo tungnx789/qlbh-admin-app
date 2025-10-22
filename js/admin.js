@@ -98,10 +98,10 @@ class QLBHAdmin {
 
     // Dashboard Methods
     async loadDashboard() {
-        const data = await this.callAPI('getDashboard');
-        if (data) {
-            this.updateDashboardStats(data);
-            this.updateCharts(data);
+        const response = await this.callAPI('getDashboard');
+        if (response && response.success) {
+            this.updateDashboardStats(response.data);
+            this.updateCharts(response.data);
         }
     }
 
@@ -199,35 +199,35 @@ class QLBHAdmin {
             ...this.filters.tonkho
         };
         
-        const data = await this.callAPI('getTonKho', params);
-        if (data) {
-            this.renderTonKhoTable(data);
-            this.updateTonKhoPagination(data);
+        const response = await this.callAPI('getTonKho', params);
+        if (response && response.success) {
+            this.renderTonKhoTable(response.data);
+            this.updateTonKhoPagination(response.data);
         }
     }
 
     renderTonKhoTable(data) {
         const tbody = document.getElementById('tonkhoTableBody');
         tbody.innerHTML = '';
-
-        data.items.forEach((item, index) => {
+    
+        data.rows.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${(this.currentPage - 1) * this.pageSize + index + 1}</td>
-                <td>${item.imei || ''}</td>
-                <td>${item.imeiV5 || ''}</td>
-                <td>${item.dongMay || ''}</td>
-                <td>${item.dungLuong || ''}</td>
-                <td>${item.mauSac || ''}</td>
-                <td>${this.formatCurrency(item.giaNhap || 0)}</td>
-                <td>${item.nhaCungCap || ''}</td>
-                <td>${this.formatDate(item.ngayNhap)}</td>
-                <td><span class="status-badge ${item.trangThai || 'active'}">${item.trangThai || 'Hoạt động'}</span></td>
+                <td>${item[5] || ''}</td>  <!-- IMEI -->
+                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
+                <td>${item[2] || ''}</td>  <!-- DÒNG MÁY -->
+                <td>${item[3] || ''}</td>  <!-- DUNG LƯỢNG -->
+                <td>${item[4] || ''}</td>  <!-- MÀU SẮC -->
+                <td>${this.formatCurrency(item[7] || 0)}</td>  <!-- GIÁ NHẬP -->
+                <td>${item[8] || ''}</td>  <!-- NHÀ CUNG CẤP -->
+                <td>${this.formatDate(item[1])}</td>  <!-- NGÀY NHẬP -->
+                <td><span class="status-badge active">Hoạt động</span></td>
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="admin.editTonKho(${item.id})">
+                    <button class="btn btn-sm btn-primary">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="admin.deleteTonKho(${item.id})">
+                    <button class="btn btn-sm btn-danger">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -262,10 +262,10 @@ class QLBHAdmin {
             ...this.filters.nhaphang
         };
         
-        const data = await this.callAPI('getNhapHang', params);
-        if (data) {
-            this.renderNhapHangTable(data);
-            this.updateNhapHangPagination(data);
+        const response = await this.callAPI('getNhapHang', params);
+        if (response && response.success) {
+            this.renderNhapHangTable(response.data);
+            this.updateNhapHangPagination(response.data);
         }
     }
 
