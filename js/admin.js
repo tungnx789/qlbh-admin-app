@@ -78,7 +78,7 @@ class QLBHAdmin {
     async callAPI(action, params = {}) {
         this.showLoading();
         try {
-            const url = new URL('https://script.google.com/macros/s/AKfycbxxyHca1zVXW9fa5FSFUP7XEtkaxvTMojxE-O9Vqk1LyyBYE7Aig42sr4ZXfwCXms5bkA/exec');
+            const url = new URL('https://script.google.com/macros/s/AKfycbwHKQghzT89gptdUeew01jyQx1amCyIUSwtIecvWbFetRIpBIQmLINsA3HDPI33rbax/exec');
             url.searchParams.append('action', action);
             Object.keys(params).forEach(key => {
                 url.searchParams.append(key, params[key]);
