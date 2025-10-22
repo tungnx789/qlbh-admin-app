@@ -209,7 +209,14 @@ class QLBHAdmin {
     renderTonKhoTable(data) {
         const tbody = document.getElementById('tonkhoTableBody');
         tbody.innerHTML = '';
-    
+
+        if (!data.rows || data.rows.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="11" class="text-center">Không có dữ liệu</td>';
+            tbody.appendChild(row);
+            return;
+        }
+
         data.rows.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
@@ -237,7 +244,7 @@ class QLBHAdmin {
     }
 
     updateTonKhoPagination(data) {
-        const totalPages = Math.ceil(data.total / this.pageSize);
+        const totalPages = Math.ceil(data.totalRows / this.pageSize);
         document.getElementById('tonkhoPageInfo').textContent = `Trang ${this.currentPage} / ${totalPages}`;
         
         document.getElementById('prevTonKhoBtn').disabled = this.currentPage <= 1;
@@ -273,25 +280,32 @@ class QLBHAdmin {
         const tbody = document.getElementById('nhaphangTableBody');
         tbody.innerHTML = '';
 
-        data.items.forEach((item, index) => {
+        if (!data.rows || data.rows.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="12" class="text-center">Không có dữ liệu</td>';
+            tbody.appendChild(row);
+            return;
+        }
+
+        data.rows.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${(this.currentPage - 1) * this.pageSize + index + 1}</td>
-                <td>${this.formatDate(item.ngayNhap)}</td>
-                <td>${item.imei || ''}</td>
-                <td>${item.imeiV5 || ''}</td>
-                <td>${item.dongMay || ''}</td>
-                <td>${item.dungLuong || ''}</td>
-                <td>${item.mauSac || ''}</td>
-                <td>${this.formatCurrency(item.giaNhap || 0)}</td>
-                <td>${item.nhaCungCap || ''}</td>
-                <td>${item.moTa || ''}</td>
-                <td>${item.txNhap || ''}</td>
+                <td>${this.formatDate(item[1])}</td>  <!-- NGÀY NHẬP -->
+                <td>${item[5] || ''}</td>  <!-- IMEI -->
+                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
+                <td>${item[2] || ''}</td>  <!-- DÒNG MÁY -->
+                <td>${item[3] || ''}</td>  <!-- DUNG LƯỢNG -->
+                <td>${item[4] || ''}</td>  <!-- MÀU SẮC -->
+                <td>${this.formatCurrency(item[7] || 0)}</td>  <!-- GIÁ NHẬP -->
+                <td>${item[8] || ''}</td>  <!-- NHÀ CUNG CẤP -->
+                <td>${item[9] || ''}</td>  <!-- MÔ TẢ NHẬP -->
+                <td>${item[12] || ''}</td>  <!-- TX_NHAP -->
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="admin.editNhapHang(${item.id})">
+                    <button class="btn btn-sm btn-primary">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="admin.deleteNhapHang(${item.id})">
+                    <button class="btn btn-sm btn-danger">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -301,7 +315,7 @@ class QLBHAdmin {
     }
 
     updateNhapHangPagination(data) {
-        const totalPages = Math.ceil(data.total / this.pageSize);
+        const totalPages = Math.ceil(data.totalRows / this.pageSize);
         document.getElementById('nhaphangPageInfo').textContent = `Trang ${this.currentPage} / ${totalPages}`;
         
         document.getElementById('prevNhapHangBtn').disabled = this.currentPage <= 1;
@@ -328,11 +342,11 @@ class QLBHAdmin {
             pageSize: this.pageSize
         };
         
-        const data = await this.callAPI('getBanHang', params);
-        if (data) {
-            this.renderBanHangTable(data);
-            this.updateBanHangPagination(data);
-            this.updateBanHangSummary(data.summary);
+        const response = await this.callAPI('getBanHang', params);
+        if (response && response.success) {
+            this.renderBanHangTable(response.data);
+            this.updateBanHangPagination(response.data);
+            this.updateBanHangSummary(response.data.statistics);
         }
     }
 
@@ -340,26 +354,33 @@ class QLBHAdmin {
         const tbody = document.getElementById('banhangTableBody');
         tbody.innerHTML = '';
 
-        data.items.forEach((item, index) => {
+        if (!data.rows || data.rows.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="13" class="text-center">Không có dữ liệu</td>';
+            tbody.appendChild(row);
+            return;
+        }
+
+        data.rows.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${(this.currentPage - 1) * this.pageSize + index + 1}</td>
-                <td>${this.formatDate(item.ngayBan)}</td>
-                <td>${item.imei || ''}</td>
-                <td>${item.imeiV5 || ''}</td>
-                <td>${item.dongMay || ''}</td>
-                <td>${item.dungLuong || ''}</td>
-                <td>${item.mauSac || ''}</td>
-                <td>${this.formatCurrency(item.giaBan || 0)}</td>
-                <td>${this.formatCurrency(item.giaNhap || 0)}</td>
-                <td>${this.formatCurrency(item.loiNhuan || 0)}</td>
-                <td>${item.khachHang || ''}</td>
-                <td>${item.moTaBan || ''}</td>
+                <td>${this.formatDate(item[1])}</td>  <!-- NGÀY BÁN -->
+                <td>${item[5] || ''}</td>  <!-- IMEI -->
+                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
+                <td>${item[2] || ''}</td>  <!-- DÒNG MÁY -->
+                <td>${item[3] || ''}</td>  <!-- DUNG LƯỢNG -->
+                <td>${item[4] || ''}</td>  <!-- MÀU SẮC -->
+                <td>${this.formatCurrency(item[7] || 0)}</td>  <!-- GIÁ BÁN -->
+                <td>${this.formatCurrency(item[12] || 0)}</td>  <!-- GIÁ NHẬP -->
+                <td>${this.formatCurrency(item[11] || 0)}</td>  <!-- LỢI NHUẬN -->
+                <td>${item[8] || ''}</td>  <!-- KHÁCH HÀNG -->
+                <td>${item[10] || ''}</td>  <!-- MÔ TẢ BÁN -->
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="admin.editBanHang(${item.id})">
+                    <button class="btn btn-sm btn-primary">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="admin.deleteBanHang(${item.id})">
+                    <button class="btn btn-sm btn-danger">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -369,17 +390,17 @@ class QLBHAdmin {
     }
 
     updateBanHangPagination(data) {
-        const totalPages = Math.ceil(data.total / this.pageSize);
+        const totalPages = Math.ceil(data.totalRows / this.pageSize);
         document.getElementById('banhangPageInfo').textContent = `Trang ${this.currentPage} / ${totalPages}`;
         
         document.getElementById('prevBanHangBtn').disabled = this.currentPage <= 1;
         document.getElementById('nextBanHangBtn').disabled = this.currentPage >= totalPages;
     }
 
-    updateBanHangSummary(summary) {
-        document.getElementById('totalSales').textContent = summary.totalSales || 0;
-        document.getElementById('totalRevenue').textContent = this.formatCurrency(summary.totalRevenue || 0);
-        document.getElementById('totalProfit').textContent = this.formatCurrency(summary.totalProfit || 0);
+    updateBanHangSummary(statistics) {
+        document.getElementById('totalSales').textContent = statistics.totalBan || 0;
+        document.getElementById('totalRevenue').textContent = this.formatCurrency(statistics.totalRevenue || 0);
+        document.getElementById('totalProfit').textContent = this.formatCurrency(statistics.totalProfit || 0);
     }
 
     // XuatHuy Methods
@@ -389,10 +410,10 @@ class QLBHAdmin {
             pageSize: this.pageSize
         };
         
-        const data = await this.callAPI('getXuatHuy', params);
-        if (data) {
-            this.renderXuatHuyTable(data);
-            this.updateXuatHuyPagination(data);
+        const response = await this.callAPI('getXuatHuy', params);
+        if (response && response.success) {
+            this.renderXuatHuyTable(response.data);
+            this.updateXuatHuyPagination(response.data);
         }
     }
 
@@ -400,26 +421,33 @@ class QLBHAdmin {
         const tbody = document.getElementById('xuathuyTableBody');
         tbody.innerHTML = '';
 
-        data.items.forEach((item, index) => {
+        if (!data.rows || data.rows.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="13" class="text-center">Không có dữ liệu</td>';
+            tbody.appendChild(row);
+            return;
+        }
+
+        data.rows.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${(this.currentPage - 1) * this.pageSize + index + 1}</td>
-                <td>${this.formatDate(item.ngayXuatHuy)}</td>
-                <td>${item.loaiXuatHuy || ''}</td>
-                <td>${item.imei || ''}</td>
-                <td>${item.imeiV5 || ''}</td>
-                <td>${item.dongMay || ''}</td>
-                <td>${item.dungLuong || ''}</td>
-                <td>${item.mauSac || ''}</td>
-                <td>${this.formatCurrency(item.giaNhap || 0)}</td>
-                <td>${item.nhaCungCap || ''}</td>
-                <td>${this.formatCurrency(item.phiXuatHuy || 0)}</td>
-                <td>${item.moTaXuatHuy || ''}</td>
+                <td>${this.formatDate(item[1])}</td>  <!-- NGÀY XUẤT HỦY -->
+                <td>${item[7] || ''}</td>  <!-- LOẠI XUẤT HỦY -->
+                <td>${item[5] || ''}</td>  <!-- IMEI -->
+                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
+                <td>${item[2] || ''}</td>  <!-- DÒNG MÁY -->
+                <td>${item[3] || ''}</td>  <!-- DUNG LƯỢNG -->
+                <td>${item[4] || ''}</td>  <!-- MÀU SẮC -->
+                <td>${this.formatCurrency(item[8] || 0)}</td>  <!-- GIÁ NHẬP -->
+                <td>${item[9] || ''}</td>  <!-- NHÀ CUNG CẤP -->
+                <td>${this.formatCurrency(item[14] || 0)}</td>  <!-- PHÍ XUẤT HỦY -->
+                <td>${item[15] || ''}</td>  <!-- MÔ TẢ XUẤT HỦY -->
                 <td>
-                    <button class="btn btn-sm btn-primary" onclick="admin.editXuatHuy(${item.id})">
+                    <button class="btn btn-sm btn-primary">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger" onclick="admin.deleteXuatHuy(${item.id})">
+                    <button class="btn btn-sm btn-danger">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -429,7 +457,7 @@ class QLBHAdmin {
     }
 
     updateXuatHuyPagination(data) {
-        const totalPages = Math.ceil(data.total / this.pageSize);
+        const totalPages = Math.ceil(data.totalRows / this.pageSize);
         document.getElementById('xuathuyPageInfo').textContent = `Trang ${this.currentPage} / ${totalPages}`;
         
         document.getElementById('prevXuatHuyBtn').disabled = this.currentPage <= 1;
@@ -444,11 +472,10 @@ class QLBHAdmin {
             return;
         }
 
-        const imeiList = imeiInput.split(',').map(imei => imei.trim());
-        const data = await this.callAPI('searchIMEI', { imeiList });
+        const response = await this.callAPI('searchIMEI', { imei: imeiInput });
         
-        if (data) {
-            this.renderIMEIResults(data);
+        if (response && response.success) {
+            this.renderIMEIResults(response.data.history);
         }
     }
 
@@ -483,11 +510,11 @@ class QLBHAdmin {
     // BaoCao Methods
     async loadBaoCao() {
         const customDays = document.getElementById('customDays').value;
-        const data = await this.callAPI('getBaoCao', { days: customDays });
+        const response = await this.callAPI('getBaoCao', { days: customDays });
         
-        if (data) {
-            this.renderBaoCaoTable(data);
-            this.updateBaoCaoSummary(data.summary);
+        if (response && response.success) {
+            this.renderBaoCaoTable(response.data);
+            this.updateBaoCaoSummary(response.data);
         }
     }
 
@@ -495,7 +522,14 @@ class QLBHAdmin {
         const tbody = document.getElementById('baocaoTableBody');
         tbody.innerHTML = '';
 
-        data.items.forEach((item, index) => {
+        if (!data.tonKhoByDongMay || data.tonKhoByDongMay.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="6" class="text-center">Không có dữ liệu</td>';
+            tbody.appendChild(row);
+            return;
+        }
+
+        data.tonKhoByDongMay.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${index + 1}</td>
@@ -509,9 +543,9 @@ class QLBHAdmin {
         });
     }
 
-    updateBaoCaoSummary(summary) {
-        document.getElementById('totalQuantity').textContent = summary.totalQuantity || 0;
-        document.getElementById('totalValue').textContent = this.formatCurrency(summary.totalValue || 0);
+    updateBaoCaoSummary(data) {
+        document.getElementById('totalQuantity').textContent = data.totalTonKho || 0;
+        document.getElementById('totalValue').textContent = this.formatCurrency(data.totalValue || 0);
     }
 
     // Pagination Methods
