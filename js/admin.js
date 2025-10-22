@@ -78,7 +78,7 @@ class QLBHAdmin {
     async callAPI(action, params = {}) {
         this.showLoading();
         try {
-            const url = new URL('https://script.google.com/macros/s/YOUR_SCRIPT_ID/exec');
+            const url = new URL('https://script.google.com/macros/s/1QRblo37Vooehfn8um9lNuvcAUqYbqpeHH1zJR6PPX-J6qNj791YrIZZQ/exec');
             url.searchParams.append('action', action);
             Object.keys(params).forEach(key => {
                 url.searchParams.append(key, params[key]);
