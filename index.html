@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QLBH Admin Dashboard</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <h1><i class="fas fa-cogs"></i> QLBH Admin Dashboard</h1>
+            <div class="user-info">
+                <span class="user-name">Admin</span>
+                <i class="fas fa-user-circle"></i>
+            </div>
+        </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav">
+        <div class="nav-content">
+            <button class="nav-item active" data-module="dashboard">
+                <i class="fas fa-chart-pie"></i> Dashboard
+            </button>
+            <button class="nav-item" data-module="tonkho">
+                <i class="fas fa-boxes"></i> Tồn Kho
+            </button>
+            <button class="nav-item" data-module="nhaphang">
+                <i class="fas fa-arrow-down"></i> Nhập Hàng
+            </button>
+            <button class="nav-item" data-module="banhang">
+                <i class="fas fa-shopping-cart"></i> Bán Hàng
+            </button>
+            <button class="nav-item" data-module="xuathuy">
+                <i class="fas fa-trash"></i> Xuất Hủy
+            </button>
+            <button class="nav-item" data-module="imei">
+                <i class="fas fa-search"></i> Tìm IMEI
+            </button>
+            <button class="nav-item" data-module="baocao">
+                <i class="fas fa-chart-bar"></i> Báo Cáo
+            </button>
+            <button class="nav-item" data-module="tools">
+                <i class="fas fa-tools"></i> Tools
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Dashboard Module -->
+        <div id="dashboard" class="module active">
+            <div class="module-header">
+                <h2><i class="fas fa-chart-pie"></i> Dashboard Overview</h2>
+                <button class="btn btn-primary" onclick="refreshDashboard()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-boxes"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Tồn Kho</h3>
+                        <div class="stat-number" id="totalTonKho">0</div>
+                        <div class="stat-trend positive">+5.2%</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-dollar-sign"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Doanh Thu Tháng</h3>
+                        <div class="stat-number" id="totalRevenue">0</div>
+                        <div class="stat-trend positive">+12.3%</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-arrow-down"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Nhập Tháng</h3>
+                        <div class="stat-number" id="totalNhap">0</div>
+                        <div class="stat-trend positive">+8.1%</div>
+                    </div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon">
+                        <i class="fas fa-shopping-cart"></i>
+                    </div>
+                    <div class="stat-content">
+                        <h3>Bán Tháng</h3>
+                        <div class="stat-number" id="totalBan">0</div>
+                        <div class="stat-trend positive">+15.7%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <h4><i class="fas fa-chart-line"></i> Doanh Thu Theo Tháng</h4>
+                    <canvas id="revenueChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <h4><i class="fas fa-chart-pie"></i> Top Sản Phẩm</h4>
+                    <canvas id="productsChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- TonKho Module -->
+        <div id="tonkho" class="module">
+            <div class="module-header">
+                <h2><i class="fas fa-boxes"></i> Quản Lý Tồn Kho</h2>
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="addTonKho()">
+                        <i class="fas fa-plus"></i> Thêm Mới
+                    </button>
+                    <button class="btn btn-secondary" onclick="syncTonKho()">
+                        <i class="fas fa-sync-alt"></i> Đồng Bộ
+                    </button>
+                    <button class="btn btn-warning" onclick="recalculateTonKho()">
+                        <i class="fas fa-calculator"></i> Tính Lại
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-group">
+                    <input type="text" id="searchTonKho" placeholder="🔍 Tìm theo IMEI, Dòng máy..." class="filter-input">
+                    <select id="filterDongMay" class="filter-select">
+                        <option value="">Tất cả dòng máy</option>
+                        <option value="iPhone 17 Pro Max">iPhone 17 Pro Max</option>
+                        <option value="iPhone 16 Pro">iPhone 16 Pro</option>
+                        <option value="iPhone 15 Pro Max">iPhone 15 Pro Max</option>
+                    </select>
+                    <select id="filterDungLuong" class="filter-select">
+                        <option value="">Tất cả dung lượng</option>
+                        <option value="128GB">128GB</option>
+                        <option value="256GB">256GB</option>
+                        <option value="512GB">512GB</option>
+                        <option value="1TB">1TB</option>
+                    </select>
+                    <button class="btn btn-info" onclick="applyTonKhoFilters()">
+                        <i class="fas fa-filter"></i> Lọc
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-container">
+                <table id="tonkhoTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>IMEI</th>
+                            <th>IMEI V5</th>
+                            <th>Dòng Máy</th>
+                            <th>Dung Lượng</th>
+                            <th>Màu Sắc</th>
+                            <th>Giá Nhập</th>
+                            <th>Nhà CC</th>
+                            <th>Ngày Nhập</th>
+                            <th>Trạng Thái</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tonkhoTableBody">
+                        <!-- Data sẽ được load từ API -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="btn btn-secondary" onclick="prevTonKhoPage()" id="prevTonKhoBtn">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </button>
+                <span id="tonkhoPageInfo">Trang 1 / 1</span>
+                <button class="btn btn-secondary" onclick="nextTonKhoPage()" id="nextTonKhoBtn">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- NhapHang Module -->
+        <div id="nhaphang" class="module">
+            <div class="module-header">
+                <h2><i class="fas fa-arrow-down"></i> Lịch Sử Nhập Hàng</h2>
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="addNhapHang()">
+                        <i class="fas fa-plus"></i> Thêm Nhập
+                    </button>
+                    <button class="btn btn-info" onclick="exportNhapHang()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <div class="filter-group">
+                    <input type="date" id="nhapDateFrom" class="filter-input" placeholder="Từ ngày">
+                    <input type="date" id="nhapDateTo" class="filter-input" placeholder="Đến ngày">
+                    <input type="text" id="searchNhapHang" placeholder="🔍 Tìm theo IMEI, NCC..." class="filter-input">
+                    <select id="filterNCC" class="filter-select">
+                        <option value="">Tất cả NCC</option>
+                        <option value="NCC A">NCC A</option>
+                        <option value="NCC B">NCC B</option>
+                    </select>
+                    <button class="btn btn-info" onclick="applyNhapHangFilters()">
+                        <i class="fas fa-filter"></i> Lọc
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-container">
+                <table id="nhaphangTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ngày Nhập</th>
+                            <th>IMEI</th>
+                            <th>IMEI V5</th>
+                            <th>Dòng Máy</th>
+                            <th>Dung Lượng</th>
+                            <th>Màu Sắc</th>
+                            <th>Giá Nhập</th>
+                            <th>Nhà CC</th>
+                            <th>Mô Tả</th>
+                            <th>TX_NHAP</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="nhaphangTableBody">
+                        <!-- Data sẽ được load từ API -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="btn btn-secondary" onclick="prevNhapHangPage()" id="prevNhapHangBtn">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </button>
+                <span id="nhaphangPageInfo">Trang 1 / 1</span>
+                <button class="btn btn-secondary" onclick="nextNhapHangPage()" id="nextNhapHangBtn">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- BanHang Module -->
+        <div id="banhang" class="module">
+            <div class="module-header">
+                <h2><i class="fas fa-shopping-cart"></i> Bán Hàng Theo Tháng</h2>
+                <div class="month-selector">
+                    <select id="monthSelector" onchange="loadBanHangMonth()" class="filter-select">
+                        <option value="01">Tháng 1</option>
+                        <option value="02">Tháng 2</option>
+                        <option value="03">Tháng 3</option>
+                        <option value="04">Tháng 4</option>
+                        <option value="05">Tháng 5</option>
+                        <option value="06">Tháng 6</option>
+                        <option value="07">Tháng 7</option>
+                        <option value="08">Tháng 8</option>
+                        <option value="09">Tháng 9</option>
+                        <option value="10">Tháng 10</option>
+                        <option value="11">Tháng 11</option>
+                        <option value="12">Tháng 12</option>
+                    </select>
+                    <button class="btn btn-primary" onclick="addBanHang()">
+                        <i class="fas fa-plus"></i> Thêm Bán
+                    </button>
+                </div>
+            </div>
+
+            <!-- Month Summary -->
+            <div class="month-summary">
+                <div class="summary-card">
+                    <h4><i class="fas fa-chart-bar"></i> Thống Kê Tháng</h4>
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="label">Tổng Bán:</span>
+                            <span class="value" id="totalSales">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Doanh Thu:</span>
+                            <span class="value" id="totalRevenue">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="label">Lợi Nhuận:</span>
+                            <span class="value" id="totalProfit">0</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-container">
+                <table id="banhangTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ngày Bán</th>
+                            <th>IMEI</th>
+                            <th>IMEI V5</th>
+                            <th>Dòng Máy</th>
+                            <th>Dung Lượng</th>
+                            <th>Màu Sắc</th>
+                            <th>Giá Bán</th>
+                            <th>Giá Nhập</th>
+                            <th>Lợi Nhuận</th>
+                            <th>Khách Hàng</th>
+                            <th>Mô Tả Bán</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="banhangTableBody">
+                        <!-- Data sẽ được load từ API -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="btn btn-secondary" onclick="prevBanHangPage()" id="prevBanHangBtn">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </button>
+                <span id="banhangPageInfo">Trang 1 / 1</span>
+                <button class="btn btn-secondary" onclick="nextBanHangPage()" id="nextBanHangBtn">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- XuatHuy Module -->
+        <div id="xuathuy" class="module">
+            <div class="module-header">
+                <h2><i class="fas fa-trash"></i> Xuất Hủy / Trả NCC</h2>
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="addXuatHuy()">
+                        <i class="fas fa-plus"></i> Thêm Xuất Hủy
+                    </button>
+                    <button class="btn btn-info" onclick="exportXuatHuy()">
+                        <i class="fas fa-download"></i> Export
+                    </button>
+                </div>
+            </div>
+
+            <!-- Data Table -->
+            <div class="table-container">
+                <table id="xuathuyTable" class="data-table">
+                    <thead>
+                        <tr>
+                            <th>STT</th>
+                            <th>Ngày Xuất Hủy</th>
+                            <th>Loại Xuất Hủy</th>
+                            <th>IMEI</th>
+                            <th>IMEI V5</th>
+                            <th>Dòng Máy</th>
+                            <th>Dung Lượng</th>
+                            <th>Màu Sắc</th>
+                            <th>Giá Nhập</th>
+                            <th>Nhà CC</th>
+                            <th>Phí Xuất Hủy</th>
+                            <th>Mô Tả Xuất Hủy</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="xuathuyTableBody">
+                        <!-- Data sẽ được load từ API -->
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            <div class="pagination">
+                <button class="btn btn-secondary" onclick="prevXuatHuyPage()" id="prevXuatHuyBtn">
+                    <i class="fas fa-chevron-left"></i> Trước
+                </button>
+                <span id="xuathuyPageInfo">Trang 1 / 1</span>
+                <button class="btn btn-secondary" onclick="nextXuatHuyPage()" id="nextXuatHuyBtn">
+                    Sau <i class="fas fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- IMEI Search Module -->
+        <div id="imei" class="module">
+            <div class="module-header">
+                <h2><i class="fas fa-search"></i> Tìm Lịch Sử IMEI</h2>
+            </div>
+
+            <div class="search-form">
+                <div class="search-input-group">
+                    <input type="text" id="imeiSearch" placeholder="Nhập IMEI (có thể nhiều IMEI cách nhau bằng dấu phẩy)" class="search-input">
+                    <button class="btn btn-primary" onclick="searchIMEI()">
+                        <i class="fas fa-search"></i> Tìm Kiếm
+                    </button>
+                </div>
+            </div>
+
+            <div class="search-results" id="imeiResults" style="display:none">
+                <h3><i class="fas fa-history"></i> Lịch Sử Giao Dịch</h3>
+                <div class="imei-timeline" id="imeiTimeline">
+                    <!-- Timeline sẽ được render từ API -->
+                </div>
+            </div>
+        </div>
+
+        <!-- BaoCao Module -->
+        <div id="baocao" class="module">
+            <div class="module-header">
+                <h2><i class="fas fa-chart-bar"></i> Báo Cáo Tồn Kho</h2>
+                <div class="actions">
+                    <button class="btn btn-primary" onclick="generateBaoCao()">
+                        <i class="fas fa-sync-alt"></i> Tạo Báo Cáo
+                    </button>
+                    <button class="btn btn-secondary" onclick="exportBaoCao()">
+                        <i class="fas fa-download"></i> Export Excel
+                    </button>
+                </div>
+            </div>
+
+            <div class="baocao-filters">
+                <div class="filter-group">
+                    <input type="number" id="customDays" placeholder="Số ngày tùy chỉnh" value="30" class="filter-input">
+                    <button class="btn btn-info" onclick="updateBaoCao()">
+                        <i class="fas fa-sync-alt"></i> Cập Nhật
+                    </button>
+                </div>
+            </div>
+
+            <div class="baocao-content">
+                <div class="baocao-summary">
+                    <div class="summary-item">
+                        <span class="label">Tổng Số Lượng:</span>
+                        <span class="value" id="totalQuantity">0</span>
+                    </div>
+                    <div class="summary-item">
+                        <span class="label">Tổng Giá Trị:</span>
+                        <span class="value" id="totalValue">0</span>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <table id="baocaoTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Dòng Máy</th>
+                                <th>Số Lượng</th>
+                                <th>Giá Trị</th>
+                                <th>Giá TB</th>
+                                <th>Ngày Nhập Cuối</th>
+                            </tr>
+                        </thead>
+                        <tbody id="baocaoTableBody">
+                            <!-- Data sẽ được load từ API -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tools Module -->
+        <div id="tools" class="module">
+            <div class="module-header">
+                <h2><i class="fas fa-tools"></i> Admin Tools</h2>
+            </div>
+
+            <div class="tools-grid">
+                <div class="tool-card">
+                    <h3><i class="fas fa-sync-alt"></i> Đồng Bộ Dữ Liệu</h3>
+                    <p>Đồng bộ thông tin từ NhapHang sang TonKho</p>
+                    <button class="btn btn-primary" onclick="syncData()">Đồng Bộ</button>
+                </div>
+                <div class="tool-card">
+                    <h3><i class="fas fa-calculator"></i> Tính Lợi Nhuận</h3>
+                    <p>Tính lại lợi nhuận cho tất cả giao dịch bán</p>
+                    <button class="btn btn-warning" onclick="calculateProfit()">Tính Lại</button>
+                </div>
+                <div class="tool-card">
+                    <h3><i class="fas fa-balance-scale"></i> Đối Chiếu Tồn Kho</h3>
+                    <p>So sánh TonKho với TinhTonKho</p>
+                    <button class="btn btn-info" onclick="compareTonKho()">Đối Chiếu</button>
+                </div>
+                <div class="tool-card">
+                    <h3><i class="fas fa-save"></i> Backup Dữ Liệu</h3>
+                    <p>Tạo backup và gửi email</p>
+                    <button class="btn btn-success" onclick="backupData()">Backup</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fas fa-spinner fa-spin"></i>
+            <p>Đang tải dữ liệu...</p>
+        </div>
+    </div>
+
+    <!-- Modal for Add/Edit -->
+    <div id="modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 id="modalTitle">Thêm Mới</h3>
+                <button class="modal-close" onclick="closeModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="modalBody">
+                <!-- Form content will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeModal()">Hủy</button>
+                <button class="btn btn-primary" onclick="saveModal()">Lưu</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/admin.js"></script>
+</body>
+</html>
