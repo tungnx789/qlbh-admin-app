@@ -48,7 +48,7 @@ class QLBHAdmin {
         // Thêm event listener cho nút THỐNG KÊ TOP SẢN PHẨM (chỉ khi ở tab Báo Cáo)
         document.getElementById('topProductsDays')?.addEventListener('change', () => {
             if (this.currentModule === 'baocao') {
-                this.loadTopProducts();
+                this.refreshTopProducts();
             }
         });
     }
@@ -149,6 +149,22 @@ class QLBHAdmin {
     async refreshTopProducts() {
         this.clearCache('topproducts');
         await this.loadTopProducts();
+    }
+    
+    // Refresh tất cả bảng trong tab Báo Cáo
+    async refreshAllBaoCao() {
+        this.clearCache('baocao');
+        this.clearCache('topproducts');
+        
+        // Load lại cả hai bảng
+        await this.loadBaoCao();
+        await this.loadTopProducts();
+    }
+    
+    // Refresh chỉ Báo Cáo Tồn Kho
+    async refreshBaoCaoTonKho() {
+        this.clearCache('baocao');
+        await this.loadBaoCao();
     }
 
     // API Methods
@@ -794,6 +810,18 @@ class QLBHAdmin {
 // Global functions for HTML onclick events
 function refreshDashboard() {
     admin.refreshDashboard();
+}
+
+function refreshBaoCaoTonKho() {
+    admin.refreshBaoCaoTonKho();
+}
+
+function refreshAllBaoCao() {
+    admin.refreshAllBaoCao();
+}
+
+function refreshTopProducts() {
+    admin.refreshTopProducts();
 }
 
 function addTonKho() {
