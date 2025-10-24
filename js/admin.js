@@ -18,14 +18,17 @@ class QLBHAdmin {
             topproducts: { data: null, lastUpdate: null }
         };
         
+        // Disable cache for development - set to false for production
+        this.DISABLE_CACHE = true;
+        
         this.init();
     }
 
     init() {
         this.setupEventListeners();
         this.initRouting();
-        this.loadDashboard();
-        this.setupCharts();
+        // DON'T auto-load dashboard - wait for user to click refresh button
+        console.log('init - App initialized - No auto-load');
     }
 
     setupEventListeners() {
@@ -88,31 +91,17 @@ class QLBHAdmin {
         this.currentModule = moduleName;
         this.currentPage = 1;
 
-        // Load module data
-        switch(moduleName) {
-            case 'dashboard':
-                this.loadDashboard();
-                break;
-            case 'tonkho':
-                this.loadTonKho();
-                break;
-            case 'nhaphang':
-                this.loadNhapHang();
-                break;
-            case 'banhang':
-                this.loadBanHang();
-                break;
-            case 'xuathuy':
-                this.loadXuatHuy();
-                break;
-            case 'baocao':
-                this.loadBaoCao();
-                break;
-        }
+        // DON'T auto-load data - wait for user to click refresh button
+        console.log('switchModule - Switched to:', moduleName, '- No auto-load');
     }
 
     // Cache Methods with localStorage persistence
     getCacheData(module) {
+        // Skip cache if disabled
+        if (this.DISABLE_CACHE) {
+            return { data: null, lastUpdate: null };
+        }
+        
         // Try memory first
         if (this.cacheData[module].data) {
             return this.cacheData[module];
@@ -193,20 +182,40 @@ class QLBHAdmin {
         await this.loadXuatHuy();
     }
     
+    async refreshTonKho() {
+        console.log('refreshTonKho called');
+        this.clearCache('tonkho');
+        // Clear all localStorage for development
+        if (this.DISABLE_CACHE) {
+            localStorage.clear();
+        }
+        await this.loadTonKho();
+    }
+    
     async refreshBaoCao() {
         this.clearCache('baocao');
         await this.loadBaoCao();
     }
     
     async refreshTopProducts() {
+        console.log('refreshTopProducts called');
         this.clearCache('topproducts');
+        // Clear all localStorage for development
+        if (this.DISABLE_CACHE) {
+            localStorage.clear();
+        }
         await this.loadTopProducts();
     }
     
     // Refresh tất cả bảng trong tab Báo Cáo
     async refreshAllBaoCao() {
+        console.log('refreshAllBaoCao called');
         this.clearCache('baocao');
         this.clearCache('topproducts');
+        // Clear all localStorage for development
+        if (this.DISABLE_CACHE) {
+            localStorage.clear();
+        }
         
         // Load lại cả hai bảng
         await this.loadBaoCao();
@@ -217,6 +226,10 @@ class QLBHAdmin {
     async refreshBaoCaoTonKho() {
         console.log('refreshBaoCaoTonKho called');
         this.clearCache('baocao');
+        // Clear all localStorage for development
+        if (this.DISABLE_CACHE) {
+            localStorage.clear();
+        }
         await this.loadBaoCao();
     }
 
@@ -667,6 +680,10 @@ class QLBHAdmin {
         const customDays = document.getElementById('topProductsDays')?.value || 120;
         const response = await this.callAPI('getBaoCao', { days: customDays });
         
+        console.log('loadBaoCao - Input value:', document.getElementById('topProductsDays')?.value);
+        console.log('loadBaoCao - Parsed days:', customDays);
+        console.log('loadBaoCao - API call with days:', customDays);
+        
         if (response && response.success) {
             this.setCacheData('baocao', response.data);
             this.renderBaoCaoTable(response.data);
@@ -719,6 +736,9 @@ class QLBHAdmin {
         const daysInput = document.getElementById('topProductsDays');
         const days = daysInput ? parseInt(daysInput.value) || 120 : 120;
         
+        console.log('loadTopProducts - Input value:', daysInput?.value);
+        console.log('loadTopProducts - Parsed days:', days);
+        
         // Show loading indicator
         const loadingDiv = document.getElementById('topProductsLoading');
         const tableBody = document.getElementById('topProductsTableBody');
@@ -727,6 +747,9 @@ class QLBHAdmin {
         if (tableBody) tableBody.innerHTML = '';
         
         const response = await this.callAPI('getTopProducts', { days: days });
+        
+        console.log('loadTopProducts - API call with days:', days);
+        console.log('loadTopProducts - API response:', response);
         
         // Hide loading indicator
         if (loadingDiv) loadingDiv.style.display = 'none';
@@ -865,6 +888,15 @@ class QLBHAdmin {
 function refreshDashboard() {
     if (window.admin) {
         window.admin.refreshDashboard();
+    }
+}
+
+function refreshTonKho() {
+    console.log('Global refreshTonKho called');
+    if (window.admin) {
+        window.admin.refreshTonKho();
+    } else {
+        console.error('Admin instance not found');
     }
 }
 
