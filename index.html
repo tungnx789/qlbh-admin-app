@@ -85,11 +85,11 @@
                 </div>
                 <div class="stat-card">
                     <div class="stat-icon">
-                        <i class="fas fa-arrow-down"></i>
+                        <i class="fas fa-chart-line"></i>
                     </div>
                     <div class="stat-content">
-                        <h3>Nhập Tháng</h3>
-                        <div class="stat-number" id="totalNhap">0</div>
+                        <h3>Lợi Nhuận Tháng</h3>
+                        <div class="stat-number" id="totalProfit">0</div>
                         <div class="stat-trend positive">+8.1%</div>
                     </div>
                 </div>
@@ -112,8 +112,29 @@
                     <canvas id="revenueChart"></canvas>
                 </div>
                 <div class="chart-container">
-                    <h4><i class="fas fa-chart-pie"></i> Top Sản Phẩm</h4>
-                    <canvas id="productsChart"></canvas>
+                    <h4><i class="fas fa-trophy"></i> TOP SẢN PHẨM BÁN CHẠY</h4>
+                    <div class="top-products-controls">
+                        <input type="number" id="topProductsDays" value="120" min="1" max="365" 
+                               placeholder="Số ngày" class="filter-input" style="width: 100px;">
+                        <button class="btn btn-primary btn-sm" onclick="updateTopProducts()">
+                            <i class="fas fa-sync-alt"></i> THỐNG KÊ
+                        </button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>DÒNG MÁY</th>
+                                    <th>SỐ LƯỢNG BÁN</th>
+                                    <th>DOANH THU</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topProductsTableBody">
+                                <!-- Data sẽ được load từ API -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -536,3 +557,5 @@
     <script src="js/admin.js"></script>
 </body>
 </html>
+
+
