@@ -27,8 +27,9 @@ class QLBHAdmin {
     init() {
         this.setupEventListeners();
         this.initRouting();
+        this.setupCharts(); // ✅ Khởi tạo đồ thị ngay từ đầu
         // DON'T auto-load dashboard - wait for user to click refresh button
-        console.log('init - App initialized - No auto-load');
+        console.log('init - App initialized - Charts setup, no auto-load');
     }
 
     setupEventListeners() {
@@ -288,9 +289,11 @@ class QLBHAdmin {
     }
 
     setupCharts() {
+        console.log('🎨 setupCharts - Initializing charts...');
         // Revenue Chart - Sửa để hiển thị đúng tháng hiện tại
         const revenueCtx = document.getElementById('revenueChart');
         if (revenueCtx) {
+            console.log('📊 setupCharts - Found revenueChart canvas, creating chart...');
             // Lấy tháng hiện tại
             const currentMonth = new Date().getMonth(); // 0-11
             const monthLabels = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
@@ -304,6 +307,9 @@ class QLBHAdmin {
                 labels.push(monthLabels[monthIndex]);
                 data.push(0); // Sẽ được cập nhật từ API
             }
+            
+            console.log('📊 setupCharts - Labels:', labels);
+            console.log('📊 setupCharts - Current month:', currentMonth);
             
             this.revenueChart = new Chart(revenueCtx, {
                 type: 'line',
@@ -336,13 +342,21 @@ class QLBHAdmin {
                     }
                 }
             });
+            console.log('✅ setupCharts - Revenue chart created successfully');
+        } else {
+            console.log('❌ setupCharts - revenueChart canvas not found');
         }
     }
 
     updateCharts(data) {
+        console.log('🔄 updateCharts - Updating charts with data:', data);
         if (this.revenueChart && data.revenueByMonth) {
+            console.log('📊 updateCharts - Updating revenue chart with data:', data.revenueByMonth);
             this.revenueChart.data.datasets[0].data = data.revenueByMonth;
             this.revenueChart.update();
+            console.log('✅ updateCharts - Revenue chart updated successfully');
+        } else {
+            console.log('❌ updateCharts - Chart not found or no revenueByMonth data');
         }
     }
 
