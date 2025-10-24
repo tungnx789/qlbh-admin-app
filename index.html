@@ -121,6 +121,12 @@
         <div id="tonkho" class="module">
             <div class="module-header">
                 <h2><i class="fas fa-boxes"></i> Quản Lý Tồn Kho</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="refreshTonKho()">
+                        <i class="fas fa-sync-alt"></i> Làm Mới
+                    </button>
+                    <span id="tonkhoLastUpdate" class="last-update"></span>
+                </div>
                 <div class="actions">
                     <button class="btn btn-primary" onclick="addTonKho()">
                         <i class="fas fa-plus"></i> Thêm Mới
