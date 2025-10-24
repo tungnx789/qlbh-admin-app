@@ -425,8 +425,8 @@
             <div class="module-header">
                 <h2><i class="fas fa-chart-bar"></i> Báo Cáo</h2>
                 <div class="header-actions">
-                    <button class="btn btn-primary" onclick="admin.refreshBaoCao()">
-                        <i class="fas fa-sync-alt"></i> Làm Mới
+                    <button class="btn btn-primary" onclick="refreshAllBaoCao()">
+                        <i class="fas fa-sync-alt"></i> Làm Mới Tất Cả
                     </button>
                     <span id="baocaoLastUpdate" class="last-update"></span>
                 </div>
@@ -437,7 +437,7 @@
                 <div class="baocao-tonkho">
                     <div class="section-header">
                         <h3>📦 Báo Cáo Tồn Kho</h3>
-                        <button class="btn btn-sm btn-primary" onclick="admin.refreshBaoCao()">
+                        <button class="btn btn-sm btn-primary" onclick="refreshBaoCaoTonKho()">
                             🔄 Cập Nhật
                         </button>
                     </div>
@@ -476,7 +476,7 @@
                         <h3>🏆 TOP SẢN PHẨM BÁN CHẠY</h3>
                         <div class="top-products-controls">
                             <input type="number" id="topProductsDays" placeholder="Số ngày" value="120" class="filter-input">
-                            <button class="btn btn-sm btn-primary" onclick="admin.refreshTopProducts()">
+                            <button class="btn btn-sm btn-primary" onclick="refreshTopProducts()">
                                 📊 Thống Kê
                             </button>
                         </div>
