@@ -56,9 +56,12 @@
         <div id="dashboard" class="module active">
             <div class="module-header">
                 <h2><i class="fas fa-chart-pie"></i> Dashboard Overview</h2>
-                <button class="btn btn-primary" onclick="refreshDashboard()">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="admin.refreshDashboard()">
+                        <i class="fas fa-sync-alt"></i> Làm Mới
+                    </button>
+                    <span id="dashboardLastUpdate" class="last-update"></span>
+                </div>
             </div>
 
             <!-- Stats Cards -->
@@ -420,88 +423,87 @@
         <!-- BaoCao Module -->
         <div id="baocao" class="module">
             <div class="module-header">
-                <h2><i class="fas fa-chart-bar"></i> Báo Cáo Tồn Kho</h2>
-                <div class="actions">
-                    <button class="btn btn-primary" onclick="generateBaoCao()">
-                        <i class="fas fa-sync-alt"></i> Tạo Báo Cáo
+                <h2><i class="fas fa-chart-bar"></i> Báo Cáo</h2>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="admin.refreshBaoCao()">
+                        <i class="fas fa-sync-alt"></i> Làm Mới
                     </button>
-                    <button class="btn btn-secondary" onclick="exportBaoCao()">
-                        <i class="fas fa-download"></i> Export Excel
-                    </button>
+                    <span id="baocaoLastUpdate" class="last-update"></span>
                 </div>
             </div>
 
-            <div class="baocao-filters">
-                <div class="filter-group">
-                    <input type="number" id="customDays" placeholder="Số ngày tùy chỉnh" value="30" class="filter-input">
-                    <button class="btn btn-info" onclick="updateBaoCao()">
-                        <i class="fas fa-sync-alt"></i> Cập Nhật
-                    </button>
-                </div>
-            </div>
-
-            <div class="baocao-content">
-                <div class="baocao-summary">
-                    <div class="summary-item">
-                        <span class="label">Tổng Số Lượng:</span>
-                        <span class="value" id="totalQuantity">0</span>
-                    </div>
-                    <div class="summary-item">
-                        <span class="label">Tổng Giá Trị:</span>
-                        <span class="value" id="totalValue">0</span>
-                    </div>
-                </div>
-
-                <div class="table-container">
-                    <table id="baocaoTable" class="data-table">
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>Dòng Máy</th>
-                                <th>Số Lượng</th>
-                                <th>Giá Trị</th>
-                                <th>Giá TB</th>
-                                <th>Ngày Nhập Cuối</th>
-                            </tr>
-                        </thead>
-                        <tbody id="baocaoTableBody">
-                            <!-- Data sẽ được load từ API -->
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- TOP SẢN PHẨM BÁN CHẠY -->
-            <div class="top-products-section">
-                <div class="section-header">
-                    <h3><i class="fas fa-trophy"></i> TOP SẢN PHẨM BÁN CHẠY</h3>
-                    <div class="top-products-controls">
-                        <input type="number" id="topProductsDays" value="120" min="1" max="365" 
-                               placeholder="Số ngày" class="filter-input" style="width: 100px;">
-                        <button class="btn btn-primary btn-sm" onclick="updateTopProducts()">
-                            <i class="fas fa-sync-alt"></i> THỐNG KÊ
+            <div class="baocao-container">
+                <!-- Báo Cáo Tồn Kho -->
+                <div class="baocao-tonkho">
+                    <div class="section-header">
+                        <h3>📦 Báo Cáo Tồn Kho</h3>
+                        <button class="btn btn-sm btn-primary" onclick="admin.refreshBaoCao()">
+                            🔄 Cập Nhật
                         </button>
                     </div>
+                    
+                    <div class="baocao-summary">
+                        <div class="summary-item">
+                            <span class="label">Tổng Số Lượng:</span>
+                            <span id="totalQuantity" class="value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Tổng Giá Trị:</span>
+                            <span id="totalValue" class="value">0 đ</span>
+                        </div>
+                    </div>
+
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Dòng Máy</th>
+                                    <th>Số Lượng</th>
+                                    <th>Giá Trị</th>
+                                </tr>
+                            </thead>
+                            <tbody id="baocaoTableBody">
+                                <!-- Data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
-                
-                <div class="loading-indicator" id="topProductsLoading" style="display: none;">
-                    <i class="fas fa-spinner fa-spin"></i> Đang tính toán TOP sản phẩm...
-                </div>
-                
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>DÒNG MÁY</th>
-                                <th>SỐ LƯỢNG BÁN</th>
-                                <th>DOANH THU</th>
-                            </tr>
-                        </thead>
-                        <tbody id="topProductsTableBody">
-                            <!-- Data sẽ được load từ API -->
-                        </tbody>
-                    </table>
+
+                <!-- TOP SẢN PHẨM BÁN CHẠY -->
+                <div class="baocao-topproducts">
+                    <div class="section-header">
+                        <h3>🏆 TOP SẢN PHẨM BÁN CHẠY</h3>
+                        <div class="top-products-controls">
+                            <input type="number" id="topProductsDays" placeholder="Số ngày" value="120" class="filter-input">
+                            <button class="btn btn-sm btn-primary" onclick="admin.refreshTopProducts()">
+                                📊 Thống Kê
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div id="topProductsLoading" class="loading-indicator" style="display: none;">
+                        <i class="fas fa-spinner fa-spin"></i> Đang tính toán...
+                    </div>
+                    
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Dòng Máy</th>
+                                    <th>Số Lượng</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topProductsTableBody">
+                                <!-- Data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="last-update">
+                        <span id="topproductsLastUpdate"></span>
+                    </div>
                 </div>
             </div>
         </div>
