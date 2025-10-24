@@ -111,31 +111,6 @@
                     <h4><i class="fas fa-chart-line"></i> Doanh Thu Theo Tháng</h4>
                     <canvas id="revenueChart"></canvas>
                 </div>
-                <div class="chart-container">
-                    <h4><i class="fas fa-trophy"></i> TOP SẢN PHẨM BÁN CHẠY</h4>
-                    <div class="top-products-controls">
-                        <input type="number" id="topProductsDays" value="120" min="1" max="365" 
-                               placeholder="Số ngày" class="filter-input" style="width: 100px;">
-                        <button class="btn btn-primary btn-sm" onclick="updateTopProducts()">
-                            <i class="fas fa-sync-alt"></i> THỐNG KÊ
-                        </button>
-                    </div>
-                    <div class="table-container">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>STT</th>
-                                    <th>DÒNG MÁY</th>
-                                    <th>SỐ LƯỢNG BÁN</th>
-                                    <th>DOANH THU</th>
-                                </tr>
-                            </thead>
-                            <tbody id="topProductsTableBody">
-                                <!-- Data sẽ được load từ API -->
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
             </div>
         </div>
 
@@ -490,6 +465,40 @@
                             </tr>
                         </thead>
                         <tbody id="baocaoTableBody">
+                            <!-- Data sẽ được load từ API -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- TOP SẢN PHẨM BÁN CHẠY -->
+            <div class="top-products-section">
+                <div class="section-header">
+                    <h3><i class="fas fa-trophy"></i> TOP SẢN PHẨM BÁN CHẠY</h3>
+                    <div class="top-products-controls">
+                        <input type="number" id="topProductsDays" value="120" min="1" max="365" 
+                               placeholder="Số ngày" class="filter-input" style="width: 100px;">
+                        <button class="btn btn-primary btn-sm" onclick="updateTopProducts()">
+                            <i class="fas fa-sync-alt"></i> THỐNG KÊ
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="loading-indicator" id="topProductsLoading" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i> Đang tính toán TOP sản phẩm...
+                </div>
+                
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>DÒNG MÁY</th>
+                                <th>SỐ LƯỢNG BÁN</th>
+                                <th>DOANH THU</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topProductsTableBody">
                             <!-- Data sẽ được load từ API -->
                         </tbody>
                     </table>
