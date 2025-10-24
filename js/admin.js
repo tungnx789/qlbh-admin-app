@@ -7,6 +7,17 @@ class QLBHAdmin {
         this.filters = {};
         this.data = {};
         
+        // Cache system for all tabs
+        this.cacheData = {
+            dashboard: { data: null, lastUpdate: null },
+            tonkho: { data: null, lastUpdate: null },
+            nhaphang: { data: null, lastUpdate: null },
+            banhang: { data: null, lastUpdate: null },
+            xuathuy: { data: null, lastUpdate: null },
+            baocao: { data: null, lastUpdate: null },
+            topproducts: { data: null, lastUpdate: null }
+        };
+        
         this.init();
     }
 
@@ -81,6 +92,65 @@ class QLBHAdmin {
         }
     }
 
+    // Cache Methods
+    getCacheData(module) {
+        return this.cacheData[module];
+    }
+    
+    setCacheData(module, data) {
+        this.cacheData[module] = {
+            data: data,
+            lastUpdate: new Date().toLocaleString('vi-VN')
+        };
+    }
+    
+    clearCache(module) {
+        this.cacheData[module] = { data: null, lastUpdate: null };
+    }
+    
+    updateLastUpdateTime(module) {
+        const lastUpdateElement = document.getElementById(`${module}LastUpdate`);
+        if (lastUpdateElement && this.cacheData[module].lastUpdate) {
+            lastUpdateElement.textContent = `Cập nhật lần cuối: ${this.cacheData[module].lastUpdate}`;
+        }
+    }
+    
+    // Refresh Methods
+    async refreshDashboard() {
+        this.clearCache('dashboard');
+        await this.loadDashboard();
+    }
+    
+    async refreshTonKho() {
+        this.clearCache('tonkho');
+        await this.loadTonKho();
+    }
+    
+    async refreshNhapHang() {
+        this.clearCache('nhaphang');
+        await this.loadNhapHang();
+    }
+    
+    async refreshBanHang() {
+        this.clearCache('banhang');
+        await this.loadBanHang();
+    }
+    
+    async refreshXuatHuy() {
+        this.clearCache('xuathuy');
+        await this.loadXuatHuy();
+    }
+    
+    async refreshBaoCao() {
+        this.clearCache('baocao');
+        await this.loadBaoCao();
+    }
+    
+    async refreshTopProducts() {
+        this.clearCache('topproducts');
+        await this.loadTopProducts();
+    }
+
     // API Methods
     async callAPI(action, params = {}) {
         this.showLoading();
@@ -105,10 +175,21 @@ class QLBHAdmin {
 
     // Dashboard Methods
     async loadDashboard() {
+        // Check cache first
+        const cachedData = this.getCacheData('dashboard');
+        if (cachedData.data) {
+            this.updateDashboardStats(cachedData.data);
+            this.updateCharts(cachedData.data);
+            this.updateLastUpdateTime('dashboard');
+            return;
+        }
+        
         const response = await this.callAPI('getDashboard');
         if (response && response.success) {
+            this.setCacheData('dashboard', response.data);
             this.updateDashboardStats(response.data);
             this.updateCharts(response.data);
+            this.updateLastUpdateTime('dashboard');
         }
     }
 
@@ -496,12 +577,32 @@ class QLBHAdmin {
 
     // BaoCao Methods
     async loadBaoCao() {
+        // Check cache first
+        const cachedData = this.getCacheData('baocao');
+        if (cachedData.data) {
+            this.renderBaoCaoTable(cachedData.data);
+            this.updateBaoCaoSummary(cachedData.data);
+            this.updateLastUpdateTime('baocao');
+            
+            // Load TOP SẢN PHẨM from cache if available
+            const cachedTopProducts = this.getCacheData('topproducts');
+            if (cachedTopProducts.data) {
+                this.renderTopProductsTable(cachedTopProducts.data);
+                this.updateLastUpdateTime('topproducts');
+            } else {
+                await this.loadTopProducts();
+            }
+            return;
+        }
+        
         const customDays = document.getElementById('customDays').value;
         const response = await this.callAPI('getBaoCao', { days: customDays });
         
         if (response && response.success) {
+            this.setCacheData('baocao', response.data);
             this.renderBaoCaoTable(response.data);
             this.updateBaoCaoSummary(response.data);
+            this.updateLastUpdateTime('baocao');
         }
         
         // Load TOP SẢN PHẨM khi vào tab Báo Cáo
@@ -514,7 +615,7 @@ class QLBHAdmin {
 
         if (!data.tonKhoByDongMay || data.tonKhoByDongMay.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="6" class="text-center">Không có dữ liệu</td>';
+            row.innerHTML = '<td colspan="4" class="text-center">Không có dữ liệu</td>';
             tbody.appendChild(row);
             return;
         }
@@ -524,10 +625,8 @@ class QLBHAdmin {
             row.innerHTML = `
                 <td>${index + 1}</td>
                 <td>${item.dongMay || ''}</td>
-                <td>${item.soLuong || 0}</td>
-                <td>${this.formatCurrency(item.giaTri || 0)}</td>
-                <td>${this.formatCurrency(item.giaTB || 0)}</td>
-                <td>${this.formatDate(item.ngayNhapCuoi)}</td>
+                <td class="text-right">${item.soLuong || 0}</td>
+                <td class="text-right">${this.formatCurrency(item.giaTri || 0)}</td>
             `;
             tbody.appendChild(row);
         });
@@ -540,6 +639,14 @@ class QLBHAdmin {
 
     // TOP SẢN PHẨM Methods
     async loadTopProducts() {
+        // Check cache first
+        const cachedData = this.getCacheData('topproducts');
+        if (cachedData.data) {
+            this.renderTopProductsTable(cachedData.data);
+            this.updateLastUpdateTime('topproducts');
+            return;
+        }
+        
         const days = document.getElementById('topProductsDays').value || 120;
         
         // Show loading indicator
@@ -555,28 +662,27 @@ class QLBHAdmin {
         if (loadingDiv) loadingDiv.style.display = 'none';
         
         if (response && response.success) {
+            this.setCacheData('topproducts', response.data);
             this.renderTopProductsTable(response.data);
+            this.updateLastUpdateTime('topproducts');
         }
     }
 
     renderTopProductsTable(data) {
         const tbody = document.getElementById('topProductsTableBody');
         tbody.innerHTML = '';
-
-        if (!data.topProducts || data.topProducts.length === 0) {
-            const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="4" class="text-center">Không có dữ liệu</td>';
-            tbody.appendChild(row);
+        
+        if (!data || !data.products || data.products.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="3" class="text-center">Không có dữ liệu</td></tr>';
             return;
         }
-
-        data.topProducts.forEach((item, index) => {
+        
+        data.products.forEach(item => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${index + 1}</td>
-                <td>${item.dongMay || ''}</td>
-                <td>${item.soLuongBan || 0}</td>
-                <td>${this.formatCurrency(item.doanhThu || 0)}</td>
+                <td>${item.stt}</td>
+                <td>${item.dongMay}</td>
+                <td class="text-right">${item.soLuong}</td>
             `;
             tbody.appendChild(row);
         });
@@ -687,7 +793,7 @@ class QLBHAdmin {
 
 // Global functions for HTML onclick events
 function refreshDashboard() {
-    admin.loadDashboard();
+    admin.refreshDashboard();
 }
 
 function addTonKho() {
