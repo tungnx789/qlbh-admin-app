@@ -34,9 +34,11 @@ class QLBHAdmin {
             if (e.key === 'Enter') this.searchIMEI();
         });
         
-        // Thêm event listener cho nút THỐNG KÊ TOP SẢN PHẨM
+        // Thêm event listener cho nút THỐNG KÊ TOP SẢN PHẨM (chỉ khi ở tab Báo Cáo)
         document.getElementById('topProductsDays')?.addEventListener('change', () => {
-            this.loadTopProducts();
+            if (this.currentModule === 'baocao') {
+                this.loadTopProducts();
+            }
         });
     }
 
@@ -108,9 +110,6 @@ class QLBHAdmin {
             this.updateDashboardStats(response.data);
             this.updateCharts(response.data);
         }
-        
-        // Load TOP SẢN PHẨM khi khởi tạo Dashboard
-        await this.loadTopProducts();
     }
 
     updateDashboardStats(data) {
@@ -504,6 +503,9 @@ class QLBHAdmin {
             this.renderBaoCaoTable(response.data);
             this.updateBaoCaoSummary(response.data);
         }
+        
+        // Load TOP SẢN PHẨM khi vào tab Báo Cáo
+        await this.loadTopProducts();
     }
 
     renderBaoCaoTable(data) {
@@ -539,7 +541,18 @@ class QLBHAdmin {
     // TOP SẢN PHẨM Methods
     async loadTopProducts() {
         const days = document.getElementById('topProductsDays').value || 120;
+        
+        // Show loading indicator
+        const loadingDiv = document.getElementById('topProductsLoading');
+        const tableBody = document.getElementById('topProductsTableBody');
+        
+        if (loadingDiv) loadingDiv.style.display = 'block';
+        if (tableBody) tableBody.innerHTML = '';
+        
         const response = await this.callAPI('getTopProducts', { days: days });
+        
+        // Hide loading indicator
+        if (loadingDiv) loadingDiv.style.display = 'none';
         
         if (response && response.success) {
             this.renderTopProductsTable(response.data);
