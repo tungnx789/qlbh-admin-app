@@ -230,7 +230,7 @@ class QLBHAdmin {
         if (this.DISABLE_CACHE) {
             localStorage.clear();
         }
-        await this.loadBaoCao();
+        await this.loadBaoCaoTonKhoOnly(); // Gọi hàm mới
     }
 
     // API Methods
@@ -657,7 +657,35 @@ class QLBHAdmin {
         });
     }
 
-    // BaoCao Methods
+    // Hàm riêng - chỉ load báo cáo tồn kho
+    async loadBaoCaoTonKhoOnly() {
+        // Check cache first
+        const cachedData = this.getCacheData('baocao');
+        if (cachedData.data) {
+            this.renderBaoCaoTable(cachedData.data);
+            this.updateBaoCaoSummary(cachedData.data);
+            this.updateLastUpdateTime('baocao');
+            return;
+        }
+        
+        const customDays = document.getElementById('topProductsDays')?.value || 120;
+        const response = await this.callAPI('getBaoCao', { days: customDays });
+        
+        console.log('loadBaoCaoTonKhoOnly - Input value:', document.getElementById('topProductsDays')?.value);
+        console.log('loadBaoCaoTonKhoOnly - Parsed days:', customDays);
+        console.log('loadBaoCaoTonKhoOnly - API call with days:', customDays);
+        
+        if (response && response.success) {
+            this.setCacheData('baocao', response.data);
+            this.renderBaoCaoTable(response.data);
+            this.updateBaoCaoSummary(response.data);
+            this.updateLastUpdateTime('baocao');
+        } else {
+            this.showError('Lỗi tải dữ liệu báo cáo tồn kho');
+        }
+    }
+
+    // BaoCao Methods - Load cả 2 bảng
     async loadBaoCao() {
         // Check cache first
         const cachedData = this.getCacheData('baocao');
