@@ -899,4 +899,59 @@ body {
 .w-full { width: 100%; }
 .h-full { height: 100%; }
 
+/* Section Header Styling */
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e0e0e0;
+}
 
+.section-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.last-update {
+    font-size: 0.8rem;
+    color: #666;
+    font-style: italic;
+    white-space: nowrap;
+    min-width: 200px;
+}
+
+.top-products-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .section-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+    
+    .section-actions {
+        width: 100%;
+        justify-content: space-between;
+        flex-wrap: wrap;
+    }
+    
+    .last-update {
+        font-size: 0.7rem;
+        min-width: auto;
+        order: 2;
+    }
+    
+    .top-products-controls {
+        order: 1;
+        flex-wrap: wrap;
+    }
+}
