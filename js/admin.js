@@ -688,7 +688,7 @@ class QLBHAdmin {
             this.setCacheData('baocao', response.data);
             this.renderBaoCaoTable(response.data);
             this.updateBaoCaoSummary(response.data);
-            this.updateLastUpdateTime('baocao');
+            this.updateLastUpdateTime('baocaoTonKho'); // ✅ Timestamp riêng cho báo cáo tồn kho
             console.log('✅ loadBaoCaoTonKhoOnly completed successfully');
         } else {
             this.showError('Lỗi tải dữ liệu báo cáo tồn kho');
@@ -703,13 +703,13 @@ class QLBHAdmin {
         if (cachedData.data) {
             this.renderBaoCaoTable(cachedData.data);
             this.updateBaoCaoSummary(cachedData.data);
-            this.updateLastUpdateTime('baocao');
+            this.updateLastUpdateTime('baocaoTonKho'); // ✅ Timestamp riêng cho báo cáo tồn kho
             
             // Load TOP SẢN PHẨM from cache if available
             const cachedTopProducts = this.getCacheData('topproducts');
             if (cachedTopProducts.data) {
                 this.renderTopProductsTable(cachedTopProducts.data);
-                this.updateLastUpdateTime('topproducts');
+                this.updateLastUpdateTime('topProducts'); // ✅ Timestamp riêng cho TOP sản phẩm
             } else {
                 await this.loadTopProducts();
             }
@@ -727,7 +727,7 @@ class QLBHAdmin {
             this.setCacheData('baocao', response.data);
             this.renderBaoCaoTable(response.data);
             this.updateBaoCaoSummary(response.data);
-            this.updateLastUpdateTime('baocao');
+            this.updateLastUpdateTime('baocaoTonKho'); // ✅ Timestamp riêng cho báo cáo tồn kho
         }
         
         // Load TOP SẢN PHẨM khi vào tab Báo Cáo
@@ -796,7 +796,11 @@ class QLBHAdmin {
         if (response && response.success) {
             this.setCacheData('topproducts', response.data);
             this.renderTopProductsTable(response.data);
-            this.updateLastUpdateTime('topproducts');
+            this.updateLastUpdateTime('topProducts'); // ✅ Timestamp riêng cho TOP sản phẩm
+            console.log('✅ loadTopProducts completed successfully');
+        } else {
+            this.showError('Lỗi tải dữ liệu TOP sản phẩm');
+            console.log('❌ loadTopProducts failed');
         }
     }
 
