@@ -50,12 +50,7 @@ class QLBHAdmin {
             if (e.key === 'Enter') this.searchIMEI();
         });
         
-        // Thêm event listener cho nút THỐNG KÊ TOP SẢN PHẨM (chỉ khi ở tab Báo Cáo)
-        document.getElementById('topProductsDays')?.addEventListener('change', () => {
-            if (this.currentModule === 'baocao') {
-                this.refreshTopProducts();
-            }
-        });
+        // Removed auto-load on input change - user must click button
     }
 
     initRouting() {
@@ -220,6 +215,7 @@ class QLBHAdmin {
     
     // Refresh chỉ Báo Cáo Tồn Kho
     async refreshBaoCaoTonKho() {
+        console.log('refreshBaoCaoTonKho called');
         this.clearCache('baocao');
         await this.loadBaoCao();
     }
@@ -668,7 +664,7 @@ class QLBHAdmin {
             return;
         }
         
-        const customDays = document.getElementById('customDays').value;
+        const customDays = document.getElementById('topProductsDays')?.value || 120;
         const response = await this.callAPI('getBaoCao', { days: customDays });
         
         if (response && response.success) {
@@ -720,7 +716,8 @@ class QLBHAdmin {
             return;
         }
         
-        const days = document.getElementById('topProductsDays').value || 120;
+        const daysInput = document.getElementById('topProductsDays');
+        const days = daysInput ? parseInt(daysInput.value) || 120 : 120;
         
         // Show loading indicator
         const loadingDiv = document.getElementById('topProductsLoading');
@@ -872,8 +869,11 @@ function refreshDashboard() {
 }
 
 function refreshBaoCaoTonKho() {
+    console.log('Global refreshBaoCaoTonKho called');
     if (window.admin) {
         window.admin.refreshBaoCaoTonKho();
+    } else {
+        console.error('Admin instance not found');
     }
 }
 
