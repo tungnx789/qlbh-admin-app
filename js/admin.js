@@ -33,6 +33,11 @@ class QLBHAdmin {
         document.getElementById('imeiSearch')?.addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.searchIMEI();
         });
+        
+        // Thêm event listener cho nút THỐNG KÊ TOP SẢN PHẨM
+        document.getElementById('topProductsDays')?.addEventListener('change', () => {
+            this.loadTopProducts();
+        });
     }
 
     switchModule(moduleName) {
@@ -103,26 +108,43 @@ class QLBHAdmin {
             this.updateDashboardStats(response.data);
             this.updateCharts(response.data);
         }
+        
+        // Load TOP SẢN PHẨM khi khởi tạo Dashboard
+        await this.loadTopProducts();
     }
 
     updateDashboardStats(data) {
         document.getElementById('totalTonKho').textContent = data.totalTonKho || 0;
         document.getElementById('totalRevenue').textContent = this.formatCurrency(data.totalRevenue || 0);
-        document.getElementById('totalNhap').textContent = data.totalNhap || 0;
+        document.getElementById('totalProfit').textContent = this.formatCurrency(data.totalProfit || 0);
         document.getElementById('totalBan').textContent = data.totalBan || 0;
     }
 
     setupCharts() {
-        // Revenue Chart
+        // Revenue Chart - Sửa để hiển thị đúng tháng hiện tại
         const revenueCtx = document.getElementById('revenueChart');
         if (revenueCtx) {
+            // Lấy tháng hiện tại
+            const currentMonth = new Date().getMonth(); // 0-11
+            const monthLabels = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+            
+            // Tạo labels từ tháng hiện tại trở về trước 12 tháng
+            const labels = [];
+            const data = [];
+            
+            for (let i = 11; i >= 0; i--) {
+                const monthIndex = (currentMonth - i + 12) % 12;
+                labels.push(monthLabels[monthIndex]);
+                data.push(0); // Sẽ được cập nhật từ API
+            }
+            
             this.revenueChart = new Chart(revenueCtx, {
                 type: 'line',
                 data: {
-                    labels: ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'],
+                    labels: labels,
                     datasets: [{
                         label: 'Doanh Thu (VNĐ)',
-                        data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                        data: data,
                         borderColor: '#667eea',
                         backgroundColor: 'rgba(102, 126, 234, 0.1)',
                         tension: 0.4
@@ -148,46 +170,12 @@ class QLBHAdmin {
                 }
             });
         }
-
-        // Products Chart
-        const productsCtx = document.getElementById('productsChart');
-        if (productsCtx) {
-            this.productsChart = new Chart(productsCtx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['iPhone 17 Pro Max', 'iPhone 16 Pro', 'iPhone 15 Pro Max', 'Khác'],
-                    datasets: [{
-                        data: [30, 25, 20, 25],
-                        backgroundColor: [
-                            '#667eea',
-                            '#764ba2',
-                            '#f093fb',
-                            '#f5576c'
-                        ]
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    plugins: {
-                        legend: {
-                            position: 'bottom'
-                        }
-                    }
-                }
-            });
-        }
     }
 
     updateCharts(data) {
         if (this.revenueChart && data.revenueByMonth) {
             this.revenueChart.data.datasets[0].data = data.revenueByMonth;
             this.revenueChart.update();
-        }
-
-        if (this.productsChart && data.productsData) {
-            this.productsChart.data.labels = data.productsData.labels;
-            this.productsChart.data.datasets[0].data = data.productsData.data;
-            this.productsChart.update();
         }
     }
 
@@ -548,6 +536,39 @@ class QLBHAdmin {
         document.getElementById('totalValue').textContent = this.formatCurrency(data.totalValue || 0);
     }
 
+    // TOP SẢN PHẨM Methods
+    async loadTopProducts() {
+        const days = document.getElementById('topProductsDays').value || 120;
+        const response = await this.callAPI('getTopProducts', { days: days });
+        
+        if (response && response.success) {
+            this.renderTopProductsTable(response.data);
+        }
+    }
+
+    renderTopProductsTable(data) {
+        const tbody = document.getElementById('topProductsTableBody');
+        tbody.innerHTML = '';
+
+        if (!data.topProducts || data.topProducts.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="4" class="text-center">Không có dữ liệu</td>';
+            tbody.appendChild(row);
+            return;
+        }
+
+        data.topProducts.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.dongMay || ''}</td>
+                <td>${item.soLuongBan || 0}</td>
+                <td>${this.formatCurrency(item.doanhThu || 0)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
     // Pagination Methods
     prevTonKhoPage() {
         if (this.currentPage > 1) {
@@ -748,6 +769,10 @@ function compareTonKho() {
 
 function backupData() {
     admin.showSuccess('Đang tạo backup...');
+}
+
+function updateTopProducts() {
+    admin.loadTopProducts();
 }
 
 // Initialize the app
