@@ -209,7 +209,7 @@ class QLBHAdmin {
     
     // Refresh tất cả bảng trong tab Báo Cáo
     async refreshAllBaoCao() {
-        console.log('refreshAllBaoCao called');
+        console.log('🔄 refreshAllBaoCao called');
         this.clearCache('baocao');
         this.clearCache('topproducts');
         // Clear all localStorage for development
@@ -217,20 +217,25 @@ class QLBHAdmin {
             localStorage.clear();
         }
         
+        console.log('🔄 About to call loadBaoCao');
         // Load lại cả hai bảng
         await this.loadBaoCao();
+        console.log('🔄 About to call loadTopProducts');
         await this.loadTopProducts();
+        console.log('✅ Finished refreshAllBaoCao');
     }
     
     // Refresh chỉ Báo Cáo Tồn Kho
     async refreshBaoCaoTonKho() {
-        console.log('refreshBaoCaoTonKho called');
+        console.log('🔄 refreshBaoCaoTonKho called');
         this.clearCache('baocao');
         // Clear all localStorage for development
         if (this.DISABLE_CACHE) {
             localStorage.clear();
         }
-        await this.loadBaoCaoTonKhoOnly(); // Gọi hàm mới
+        console.log('🔄 About to call loadBaoCaoTonKhoOnly');
+        await this.loadBaoCaoTonKhoOnly();
+        console.log('✅ Finished refreshBaoCaoTonKho');
     }
 
     // API Methods
@@ -659,17 +664,21 @@ class QLBHAdmin {
 
     // Hàm riêng - chỉ load báo cáo tồn kho
     async loadBaoCaoTonKhoOnly() {
+        console.log('🔄 loadBaoCaoTonKhoOnly called');
+        
         // Check cache first
         const cachedData = this.getCacheData('baocao');
         if (cachedData.data) {
+            console.log('📦 Using cached data for báo cáo tồn kho');
             this.renderBaoCaoTable(cachedData.data);
             this.updateBaoCaoSummary(cachedData.data);
             this.updateLastUpdateTime('baocao');
             return;
         }
         
+        console.log('🌐 Fetching fresh data for báo cáo tồn kho');
         const customDays = document.getElementById('topProductsDays')?.value || 120;
-        const response = await this.callAPI('getBaoCao', { days: customDays });
+        const response = await this.callAPI('getBaoCaoTonKho', { days: customDays });
         
         console.log('loadBaoCaoTonKhoOnly - Input value:', document.getElementById('topProductsDays')?.value);
         console.log('loadBaoCaoTonKhoOnly - Parsed days:', customDays);
@@ -680,8 +689,10 @@ class QLBHAdmin {
             this.renderBaoCaoTable(response.data);
             this.updateBaoCaoSummary(response.data);
             this.updateLastUpdateTime('baocao');
+            console.log('✅ loadBaoCaoTonKhoOnly completed successfully');
         } else {
             this.showError('Lỗi tải dữ liệu báo cáo tồn kho');
+            console.log('❌ loadBaoCaoTonKhoOnly failed');
         }
     }
 
