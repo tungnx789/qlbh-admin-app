@@ -23,6 +23,7 @@ class QLBHAdmin {
 
     init() {
         this.setupEventListeners();
+        this.initRouting();
         this.loadDashboard();
         this.setupCharts();
     }
@@ -31,8 +32,12 @@ class QLBHAdmin {
         // Navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.addEventListener('click', (e) => {
+                e.preventDefault();
                 const module = e.currentTarget.dataset.module;
-                this.switchModule(module);
+                if (module) {
+                    // Use hash navigation instead of direct switch
+                    window.location.hash = module;
+                }
             });
         });
 
@@ -53,7 +58,26 @@ class QLBHAdmin {
         });
     }
 
+    initRouting() {
+        // Listen for hash changes
+        window.addEventListener('hashchange', () => {
+            const hash = window.location.hash.substring(1);
+            if (hash && hash !== this.currentModule) {
+                this.switchModule(hash);
+            }
+        });
+        
+        // Set initial route
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+            this.switchModule(hash);
+        }
+    }
+
     switchModule(moduleName) {
+        // Update URL hash
+        window.location.hash = moduleName;
+        
         // Update navigation
         document.querySelectorAll('.nav-item').forEach(item => {
             item.classList.remove('active');
@@ -92,20 +116,53 @@ class QLBHAdmin {
         }
     }
 
-    // Cache Methods
+    // Cache Methods with localStorage persistence
     getCacheData(module) {
-        return this.cacheData[module];
+        // Try memory first
+        if (this.cacheData[module].data) {
+            return this.cacheData[module];
+        }
+        
+        // Try localStorage
+        try {
+            const cached = localStorage.getItem(`qlbh_cache_${module}`);
+            if (cached) {
+                const parsedCache = JSON.parse(cached);
+                this.cacheData[module] = parsedCache;
+                return parsedCache;
+            }
+        } catch (e) {
+            console.warn('Error reading cache from localStorage:', e);
+        }
+        
+        return { data: null, lastUpdate: null };
     }
     
     setCacheData(module, data) {
-        this.cacheData[module] = {
+        const cacheData = {
             data: data,
             lastUpdate: new Date().toLocaleString('vi-VN')
         };
+        
+        this.cacheData[module] = cacheData;
+        
+        // Save to localStorage
+        try {
+            localStorage.setItem(`qlbh_cache_${module}`, JSON.stringify(cacheData));
+        } catch (e) {
+            console.warn('Error saving cache to localStorage:', e);
+        }
     }
     
     clearCache(module) {
         this.cacheData[module] = { data: null, lastUpdate: null };
+        
+        // Remove from localStorage
+        try {
+            localStorage.removeItem(`qlbh_cache_${module}`);
+        } catch (e) {
+            console.warn('Error removing cache from localStorage:', e);
+        }
     }
     
     updateLastUpdateTime(module) {
@@ -809,19 +866,27 @@ class QLBHAdmin {
 
 // Global functions for HTML onclick events
 function refreshDashboard() {
-    admin.refreshDashboard();
+    if (window.admin) {
+        window.admin.refreshDashboard();
+    }
 }
 
 function refreshBaoCaoTonKho() {
-    admin.refreshBaoCaoTonKho();
+    if (window.admin) {
+        window.admin.refreshBaoCaoTonKho();
+    }
 }
 
 function refreshAllBaoCao() {
-    admin.refreshAllBaoCao();
+    if (window.admin) {
+        window.admin.refreshAllBaoCao();
+    }
 }
 
 function refreshTopProducts() {
-    admin.refreshTopProducts();
+    if (window.admin) {
+        window.admin.refreshTopProducts();
+    }
 }
 
 function addTonKho() {
@@ -919,8 +984,13 @@ function backupData() {
 }
 
 function updateTopProducts() {
-    admin.loadTopProducts();
+    if (window.admin) {
+        window.admin.loadTopProducts();
+    }
 }
 
-// Initialize the app
-const admin = new QLBHAdmin();
+// Initialize the app when DOM is ready
+document.addEventListener('DOMContentLoaded', function() {
+    window.admin = new QLBHAdmin();
+    console.log('QLBH Admin App initialized');
+});
