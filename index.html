@@ -443,9 +443,12 @@
                 <div class="baocao-tonkho">
                     <div class="section-header">
                         <h3>📦 Báo Cáo Tồn Kho</h3>
-                        <button class="btn btn-sm btn-primary" onclick="refreshBaoCaoTonKho()">
-                            🔄 Cập Nhật
-                        </button>
+                        <div class="section-actions">
+                            <button class="btn btn-sm btn-primary" onclick="refreshBaoCaoTonKho()">
+                                🔄 Cập Nhật
+                            </button>
+                            <span id="baocaoTonKhoLastUpdate" class="last-update"></span>
+                        </div>
                     </div>
                     
                     <div class="baocao-summary">
@@ -480,11 +483,14 @@
                 <div class="baocao-topproducts">
                     <div class="section-header">
                         <h3>🏆 TOP SẢN PHẨM BÁN CHẠY</h3>
-                        <div class="top-products-controls">
-                            <input type="number" id="topProductsDays" placeholder="Số ngày" value="120" class="filter-input">
-                            <button class="btn btn-sm btn-primary" onclick="refreshTopProducts()">
-                                📊 Thống Kê
-                            </button>
+                        <div class="section-actions">
+                            <div class="top-products-controls">
+                                <input type="number" id="topProductsDays" placeholder="Số ngày" value="120" class="filter-input">
+                                <button class="btn btn-sm btn-primary" onclick="refreshTopProducts()">
+                                    📊 Thống Kê
+                                </button>
+                            </div>
+                            <span id="topProductsLastUpdate" class="last-update"></span>
                         </div>
                     </div>
                     
