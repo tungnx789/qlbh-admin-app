@@ -1050,3 +1050,89 @@ tr.edit-mode td:last-child {
         order: 1;
     }
 }
+
+/* Table Responsive - Horizontal Scroll */
+.table-responsive {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    margin-bottom: 20px;
+}
+
+.table-responsive table {
+    min-width: 800px; /* Đảm bảo bảng không bị co lại quá nhỏ */
+    margin-bottom: 0;
+}
+
+/* Custom scrollbar for better UX */
+.table-responsive::-webkit-scrollbar {
+    height: 8px;
+}
+
+.table-responsive::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb {
+    background: #888;
+    border-radius: 4px;
+}
+
+.table-responsive::-webkit-scrollbar-thumb:hover {
+    background: #555;
+}
+
+/* Mobile-specific table improvements */
+@media (max-width: 768px) {
+    .table-responsive {
+        border: 2px solid #007bff;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .table-responsive::-webkit-scrollbar {
+        height: 12px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb {
+        background: #007bff;
+        border-radius: 6px;
+    }
+    
+    .table-responsive::-webkit-scrollbar-thumb:hover {
+        background: #0056b3;
+    }
+    
+    /* Additional mobile improvements */
+    .container {
+        padding: 10px;
+    }
+    
+    .nav-tabs {
+        flex-wrap: wrap;
+    }
+    
+    .nav-item {
+        margin-bottom: 5px;
+    }
+    
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .charts-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .baocao-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
+    }
+    
+    .baocao-tonkho,
+    .baocao-topproducts {
+        min-width: 0;
+    }
+}
