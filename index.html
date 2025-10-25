@@ -189,13 +189,26 @@
 
             <!-- Pagination -->
             <div class="pagination">
-                <button class="btn btn-secondary" onclick="prevTonKhoPage()" id="prevTonKhoBtn">
-                    <i class="fas fa-chevron-left"></i> Trước
-                </button>
-                <span id="tonkhoPageInfo">Trang 1 / 1</span>
-                <button class="btn btn-secondary" onclick="nextTonKhoPage()" id="nextTonKhoBtn">
-                    Sau <i class="fas fa-chevron-right"></i>
-                </button>
+                <div class="pagination-controls">
+                    <div class="page-size-selector">
+                        <label for="tonkhoPageSize">Hiển thị:</label>
+                        <select id="tonkhoPageSize" onchange="changeTonKhoPageSize()" class="form-control">
+                            <option value="10">10 bản ghi</option>
+                            <option value="20" selected>20 bản ghi</option>
+                            <option value="50">50 bản ghi</option>
+                            <option value="100">100 bản ghi</option>
+                        </select>
+                    </div>
+                    <div class="page-navigation">
+                        <button class="btn btn-secondary" onclick="prevTonKhoPage()" id="prevTonKhoBtn">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </button>
+                        <span id="tonkhoPageInfo">Trang 1 / 1</span>
+                        <button class="btn btn-secondary" onclick="nextTonKhoPage()" id="nextTonKhoBtn">
+                            Sau <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
