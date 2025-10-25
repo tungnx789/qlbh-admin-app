@@ -418,10 +418,29 @@ class QLBHAdmin {
 
     updateTonKhoPagination(data) {
         const totalPages = Math.ceil(data.totalRows / this.pageSize);
-        document.getElementById('tonkhoPageInfo').textContent = `Trang ${this.currentPage} / ${totalPages}`;
+        const pageInfo = document.getElementById('tonkhoPageInfo');
+        if (pageInfo) {
+            pageInfo.textContent = `Trang ${this.currentPage} / ${totalPages} (${data.totalRows} bản ghi)`;
+        }
         
-        document.getElementById('prevTonKhoBtn').disabled = this.currentPage <= 1;
-        document.getElementById('nextTonKhoBtn').disabled = this.currentPage >= totalPages;
+        const prevBtn = document.getElementById('prevTonKhoBtn');
+        const nextBtn = document.getElementById('nextTonKhoBtn');
+        
+        if (prevBtn) {
+            prevBtn.disabled = this.currentPage <= 1;
+            prevBtn.style.opacity = this.currentPage <= 1 ? '0.5' : '1';
+        }
+        
+        if (nextBtn) {
+            nextBtn.disabled = this.currentPage >= totalPages;
+            nextBtn.style.opacity = this.currentPage >= totalPages ? '0.5' : '1';
+        }
+        
+        // Update page size selector
+        const pageSizeSelect = document.getElementById('tonkhoPageSize');
+        if (pageSizeSelect) {
+            pageSizeSelect.value = this.pageSize;
+        }
     }
 
     async applyTonKhoFilters() {
@@ -1095,10 +1114,17 @@ async function editTonKhoItem(index) {
     console.log('🔄 editTonKhoItem called with index:', index);
     
     // Get current data
-    const cachedData = window.admin.getCacheData('tonkho');
+    let cachedData = window.admin.getCacheData('tonkho');
     if (!cachedData.data || !cachedData.data.rows) {
-        console.error('No TonKho data found');
-        return;
+        console.log('📦 No cached data, loading TonKho...');
+        await window.admin.loadTonKho();
+        cachedData = window.admin.getCacheData('tonkho');
+        
+        if (!cachedData.data || !cachedData.data.rows) {
+            console.error('Failed to load TonKho data');
+            alert('Không thể tải dữ liệu Tồn Kho. Vui lòng thử lại.');
+            return;
+        }
     }
     
     const item = cachedData.data.rows[index];
@@ -1106,6 +1132,8 @@ async function editTonKhoItem(index) {
         console.error('Item not found at index:', index);
         return;
     }
+    
+    console.log('📝 Editing item:', item);
     
     // Create edit form
     const editForm = createEditForm(item, index);
@@ -1115,6 +1143,7 @@ async function editTonKhoItem(index) {
     const rows = tbody.querySelectorAll('tr');
     if (rows[index]) {
         rows[index].innerHTML = editForm;
+        rows[index].classList.add('edit-mode');
     }
 }
 
@@ -1232,10 +1261,17 @@ async function deleteTonKhoItem(index) {
     console.log('🗑️ deleteTonKhoItem called with index:', index);
     
     // Get item data for confirmation dialog
-    const cachedData = window.admin.getCacheData('tonkho');
+    let cachedData = window.admin.getCacheData('tonkho');
     if (!cachedData.data || !cachedData.data.rows) {
-        console.error('No TonKho data found');
-        return;
+        console.log('📦 No cached data, loading TonKho...');
+        await window.admin.loadTonKho();
+        cachedData = window.admin.getCacheData('tonkho');
+        
+        if (!cachedData.data || !cachedData.data.rows) {
+            console.error('Failed to load TonKho data');
+            alert('Không thể tải dữ liệu Tồn Kho. Vui lòng thử lại.');
+            return;
+        }
     }
     
     const item = cachedData.data.rows[index];
@@ -1281,6 +1317,53 @@ Bạn có chắc chắn muốn tiếp tục?`;
     } catch (error) {
         console.error('❌ Delete error:', error);
         alert('Lỗi xóa: ' + error.message);
+    }
+}
+
+// Global functions for TonKho pagination
+async function prevTonKhoPage() {
+    if (!window.admin) {
+        console.error('Admin instance not found');
+        return;
+    }
+    
+    if (window.admin.currentPage > 1) {
+        window.admin.currentPage--;
+        await window.admin.loadTonKho();
+    }
+}
+
+async function nextTonKhoPage() {
+    if (!window.admin) {
+        console.error('Admin instance not found');
+        return;
+    }
+    
+    // Get current data to check total pages
+    const cachedData = window.admin.getCacheData('tonkho');
+    if (cachedData.data) {
+        const totalPages = Math.ceil(cachedData.data.totalRows / window.admin.pageSize);
+        if (window.admin.currentPage < totalPages) {
+            window.admin.currentPage++;
+            await window.admin.loadTonKho();
+        }
+    }
+}
+
+async function changeTonKhoPageSize() {
+    if (!window.admin) {
+        console.error('Admin instance not found');
+        return;
+    }
+    
+    const pageSizeSelect = document.getElementById('tonkhoPageSize');
+    if (pageSizeSelect) {
+        const newPageSize = parseInt(pageSizeSelect.value);
+        if (newPageSize !== window.admin.pageSize) {
+            window.admin.pageSize = newPageSize;
+            window.admin.currentPage = 1; // Reset to first page
+            await window.admin.loadTonKho();
+        }
     }
 }
 
