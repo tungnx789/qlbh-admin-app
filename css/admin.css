@@ -985,3 +985,20 @@ tr.edit-mode td {
 tr.edit-mode .btn {
     margin: 0 0.125rem;
 }
+
+/* Edit mode button styling */
+tr.edit-mode .btn-danger {
+    background-color: #dc3545;
+    border-color: #dc3545;
+}
+
+tr.edit-mode .btn-danger:hover {
+    background-color: #c82333;
+    border-color: #bd2130;
+}
+
+/* Ensure buttons are visible in edit mode */
+tr.edit-mode td:last-child {
+    white-space: nowrap;
+    min-width: 120px;
+}
