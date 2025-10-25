@@ -390,20 +390,20 @@ class QLBHAdmin {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${(this.currentPage - 1) * this.pageSize + index + 1}</td>
-                <td>${item[5] || ''}</td>  <!-- IMEI -->
-                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
+                <td>${this.formatDate(item[1])}</td>  <!-- NGÀY NHẬP -->
                 <td>${item[2] || ''}</td>  <!-- DÒNG MÁY -->
                 <td>${item[3] || ''}</td>  <!-- DUNG LƯỢNG -->
                 <td>${item[4] || ''}</td>  <!-- MÀU SẮC -->
+                <td>${item[5] || ''}</td>  <!-- IMEI -->
+                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
                 <td>${this.formatCurrency(item[7] || 0)}</td>  <!-- GIÁ NHẬP -->
                 <td>${item[8] || ''}</td>  <!-- NHÀ CUNG CẤP -->
-                <td>${this.formatDate(item[1])}</td>  <!-- NGÀY NHẬP -->
-                <td><span class="status-badge active">Hoạt động</span></td>
+                <td>${item[9] || ''}</td>  <!-- MÔ TẢ NHẬP -->
                 <td>
-                    <button class="btn btn-sm btn-primary">
+                    <button class="btn btn-sm btn-primary" onclick="editTonKhoItem(${index})" title="Sửa">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button class="btn btn-sm btn-danger">
+                    <button class="btn btn-sm btn-danger" onclick="deleteTonKhoItem(${index})" title="Xóa">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -925,7 +925,10 @@ class QLBHAdmin {
     formatDate(date) {
         if (!date) return '';
         const d = new Date(date);
-        return d.toLocaleDateString('vi-VN');
+        const day = String(d.getDate()).padStart(2, '0');
+        const month = String(d.getMonth() + 1).padStart(2, '0');
+        const year = d.getFullYear();
+        return `${day}-${month}-${year}`;
     }
 
     debounce(func, wait) {
@@ -1075,6 +1078,176 @@ function backupData() {
 function updateTopProducts() {
     if (window.admin) {
         window.admin.loadTopProducts();
+    }
+}
+
+// Global functions for TonKho CRUD operations
+async function editTonKhoItem(index) {
+    if (!window.admin) {
+        console.error('Admin instance not found');
+        return;
+    }
+    
+    console.log('🔄 editTonKhoItem called with index:', index);
+    
+    // Get current data
+    const cachedData = window.admin.getCacheData('tonkho');
+    if (!cachedData.data || !cachedData.data.rows) {
+        console.error('No TonKho data found');
+        return;
+    }
+    
+    const item = cachedData.data.rows[index];
+    if (!item) {
+        console.error('Item not found at index:', index);
+        return;
+    }
+    
+    // Create edit form
+    const editForm = createEditForm(item, index);
+    
+    // Replace the row with edit form
+    const tbody = document.getElementById('tonkhoTableBody');
+    const rows = tbody.querySelectorAll('tr');
+    if (rows[index]) {
+        rows[index].innerHTML = editForm;
+    }
+}
+
+function createEditForm(item, index) {
+    return `
+        <td>${(window.admin.currentPage - 1) * window.admin.pageSize + index + 1}</td>
+        <td>
+            <input type="date" id="editNgayNhap_${index}" value="${formatDateForInput(item[1])}" class="form-control">
+        </td>
+        <td>
+            <input type="text" id="editDongMay_${index}" value="${item[2] || ''}" class="form-control">
+        </td>
+        <td>
+            <input type="text" id="editDungLuong_${index}" value="${item[3] || ''}" class="form-control">
+        </td>
+        <td>
+            <input type="text" id="editMauSac_${index}" value="${item[4] || ''}" class="form-control">
+        </td>
+        <td>
+            <input type="text" id="editImei_${index}" value="${item[5] || ''}" class="form-control">
+        </td>
+        <td>
+            <input type="text" id="editImeiV5_${index}" value="${item[6] || ''}" class="form-control">
+        </td>
+        <td>
+            <input type="number" id="editGiaNhap_${index}" value="${item[7] || 0}" class="form-control">
+        </td>
+        <td>
+            <input type="text" id="editNhaCungCap_${index}" value="${item[8] || ''}" class="form-control">
+        </td>
+        <td>
+            <input type="text" id="editMoTaNhap_${index}" value="${item[9] || ''}" class="form-control">
+        </td>
+        <td>
+            <button class="btn btn-sm btn-success" onclick="saveTonKhoItem(${index})" title="Lưu">
+                <i class="fas fa-save"></i>
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="cancelEditTonKhoItem(${index})" title="Hủy">
+                <i class="fas fa-times"></i>
+            </button>
+        </td>
+    `;
+}
+
+function formatDateForInput(date) {
+    if (!date) return '';
+    const d = new Date(date);
+    const year = d.getFullYear();
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+}
+
+async function saveTonKhoItem(index) {
+    if (!window.admin) {
+        console.error('Admin instance not found');
+        return;
+    }
+    
+    console.log('💾 saveTonKhoItem called with index:', index);
+    
+    // Get form data
+    const formData = {
+        rowIndex: index + 1, // API expects 1-based index
+        ngayNhap: document.getElementById(`editNgayNhap_${index}`).value,
+        dongMay: document.getElementById(`editDongMay_${index}`).value,
+        dungLuong: document.getElementById(`editDungLuong_${index}`).value,
+        mauSac: document.getElementById(`editMauSac_${index}`).value,
+        imei: document.getElementById(`editImei_${index}`).value,
+        imeiV5: document.getElementById(`editImeiV5_${index}`).value,
+        giaNhap: document.getElementById(`editGiaNhap_${index}`).value,
+        nhaCungCap: document.getElementById(`editNhaCungCap_${index}`).value,
+        moTaNhap: document.getElementById(`editMoTaNhap_${index}`).value
+    };
+    
+    console.log('💾 Form data:', formData);
+    
+    try {
+        const response = await window.admin.callAPI('updateTonKhoItem', formData);
+        if (response && response.success) {
+            console.log('✅ Update successful');
+            // Refresh TonKho data
+            await window.admin.refreshTonKho();
+        } else {
+            console.error('❌ Update failed:', response.error);
+            alert('Lỗi cập nhật: ' + (response.error || 'Không xác định'));
+        }
+    } catch (error) {
+        console.error('❌ Update error:', error);
+        alert('Lỗi cập nhật: ' + error.message);
+    }
+}
+
+function cancelEditTonKhoItem(index) {
+    if (!window.admin) {
+        console.error('Admin instance not found');
+        return;
+    }
+    
+    console.log('❌ cancelEditTonKhoItem called with index:', index);
+    
+    // Refresh TonKho data to restore original row
+    window.admin.refreshTonKho();
+}
+
+async function deleteTonKhoItem(index) {
+    if (!window.admin) {
+        console.error('Admin instance not found');
+        return;
+    }
+    
+    console.log('🗑️ deleteTonKhoItem called with index:', index);
+    
+    // Confirm deletion
+    if (!confirm('Bạn có chắc chắn muốn xóa item này?')) {
+        return;
+    }
+    
+    const formData = {
+        rowIndex: index + 1 // API expects 1-based index
+    };
+    
+    console.log('🗑️ Delete data:', formData);
+    
+    try {
+        const response = await window.admin.callAPI('deleteTonKhoItem', formData);
+        if (response && response.success) {
+            console.log('✅ Delete successful');
+            // Refresh TonKho data
+            await window.admin.refreshTonKho();
+        } else {
+            console.error('❌ Delete failed:', response.error);
+            alert('Lỗi xóa: ' + (response.error || 'Không xác định'));
+        }
+    } catch (error) {
+        console.error('❌ Delete error:', error);
+        alert('Lỗi xóa: ' + error.message);
     }
 }
 
