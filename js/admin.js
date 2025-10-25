@@ -19,7 +19,7 @@ class QLBHAdmin {
         };
         
         // Disable cache for development - set to false for production
-        this.DISABLE_CACHE = true;
+        this.DISABLE_CACHE = false;
         
         this.init();
     }
@@ -390,10 +390,19 @@ class QLBHAdmin {
     }
     
     renderTonKhoTableWithPagination(data) {
+        console.log('🎨 renderTonKhoTableWithPagination - Starting render');
+        console.log('🎨 renderTonKhoTableWithPagination - Data:', data);
+        
         const tbody = document.getElementById('tonkhoTableBody');
+        if (!tbody) {
+            console.error('❌ renderTonKhoTableWithPagination - tbody not found');
+            return;
+        }
+        
         tbody.innerHTML = '';
 
         if (!data.rows || data.rows.length === 0) {
+            console.log('🎨 renderTonKhoTableWithPagination - No data to render');
             const row = document.createElement('tr');
             row.innerHTML = '<td colspan="11" class="text-center">Không có dữ liệu</td>';
             tbody.appendChild(row);
@@ -406,6 +415,7 @@ class QLBHAdmin {
         const pageData = data.rows.slice(startIndex, endIndex);
         
         console.log(`📄 renderTonKhoTableWithPagination - Page ${this.currentPage}, showing ${pageData.length} items (${startIndex}-${endIndex-1})`);
+        console.log(`📄 renderTonKhoTableWithPagination - PageSize: ${this.pageSize}, Total rows: ${data.rows.length}`);
 
         pageData.forEach((item, index) => {
             const row = document.createElement('tr');
@@ -435,6 +445,8 @@ class QLBHAdmin {
             `;
             tbody.appendChild(row);
         });
+        
+        console.log('✅ renderTonKhoTableWithPagination - Render completed');
     }
     
     updateTonKhoPaginationClientSide(data) {
@@ -1366,15 +1378,26 @@ function prevTonKhoPage() {
         return;
     }
     
+    console.log(`🔍 prevTonKhoPage - Current page: ${window.admin.currentPage}`);
+    
     if (window.admin.currentPage > 1) {
         window.admin.currentPage--;
         console.log(`⬅️ prevTonKhoPage - Going to page ${window.admin.currentPage}`);
         // Re-render with cached data (no API call)
         const cachedData = window.admin.getCacheData('tonkho');
-        if (cachedData.data) {
+        console.log('🔍 prevTonKhoPage - Cached data:', cachedData);
+        
+        if (cachedData && cachedData.data) {
+            console.log('🔍 prevTonKhoPage - Data structure:', cachedData.data);
+            console.log('🔍 prevTonKhoPage - Rows length:', cachedData.data.rows ? cachedData.data.rows.length : 'NO ROWS');
+            
             window.admin.renderTonKhoTableWithPagination(cachedData.data);
             window.admin.updateTonKhoPaginationClientSide(cachedData.data);
+        } else {
+            console.error('❌ prevTonKhoPage - No cached data found');
         }
+    } else {
+        console.log('🔍 prevTonKhoPage - Already at first page');
     }
 }
 
@@ -1384,17 +1407,27 @@ function nextTonKhoPage() {
         return;
     }
     
+    console.log(`🔍 nextTonKhoPage - Current page: ${window.admin.currentPage}`);
+    
     // Get current data to check total pages
     const cachedData = window.admin.getCacheData('tonkho');
-    if (cachedData.data) {
+    console.log('🔍 nextTonKhoPage - Cached data:', cachedData);
+    
+    if (cachedData && cachedData.data) {
         const totalPages = Math.ceil(cachedData.data.rows.length / window.admin.pageSize);
+        console.log(`🔍 nextTonKhoPage - Total pages: ${totalPages}, Current: ${window.admin.currentPage}`);
+        
         if (window.admin.currentPage < totalPages) {
             window.admin.currentPage++;
             console.log(`➡️ nextTonKhoPage - Going to page ${window.admin.currentPage}`);
             // Re-render with cached data (no API call)
             window.admin.renderTonKhoTableWithPagination(cachedData.data);
             window.admin.updateTonKhoPaginationClientSide(cachedData.data);
+        } else {
+            console.log('🔍 nextTonKhoPage - Already at last page');
         }
+    } else {
+        console.error('❌ nextTonKhoPage - No cached data found');
     }
 }
 
@@ -1407,6 +1440,8 @@ function changeTonKhoPageSize() {
     const pageSizeSelect = document.getElementById('tonkhoPageSize');
     if (pageSizeSelect) {
         const newPageSize = parseInt(pageSizeSelect.value);
+        console.log(`🔍 changeTonKhoPageSize - Current: ${window.admin.pageSize}, New: ${newPageSize}`);
+        
         if (newPageSize !== window.admin.pageSize) {
             window.admin.pageSize = newPageSize;
             window.admin.currentPage = 1; // Reset to first page
@@ -1414,11 +1449,22 @@ function changeTonKhoPageSize() {
             
             // Re-render with cached data (no API call)
             const cachedData = window.admin.getCacheData('tonkho');
-            if (cachedData.data) {
+            console.log('🔍 changeTonKhoPageSize - Cached data:', cachedData);
+            
+            if (cachedData && cachedData.data) {
+                console.log('🔍 changeTonKhoPageSize - Data structure:', cachedData.data);
+                console.log('🔍 changeTonKhoPageSize - Rows length:', cachedData.data.rows ? cachedData.data.rows.length : 'NO ROWS');
+                
                 window.admin.renderTonKhoTableWithPagination(cachedData.data);
                 window.admin.updateTonKhoPaginationClientSide(cachedData.data);
+            } else {
+                console.error('❌ changeTonKhoPageSize - No cached data found');
             }
+        } else {
+            console.log('🔍 changeTonKhoPageSize - Same page size, no change needed');
         }
+    } else {
+        console.error('❌ changeTonKhoPageSize - Page size select not found');
     }
 }
 
