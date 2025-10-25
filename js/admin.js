@@ -388,6 +388,10 @@ class QLBHAdmin {
 
         data.rows.forEach((item, index) => {
             const row = document.createElement('tr');
+            // Debug log để kiểm tra thứ tự cột
+            console.log('renderTonKhoTable - Item data:', item);
+            console.log('renderTonKhoTable - Headers:', data.headers);
+            
             row.innerHTML = `
                 <td>${(this.currentPage - 1) * this.pageSize + index + 1}</td>
                 <td>${this.formatDate(item[1])}</td>  <!-- NGÀY NHẬP -->
@@ -1151,6 +1155,9 @@ function createEditForm(item, index) {
             <button class="btn btn-sm btn-secondary" onclick="cancelEditTonKhoItem(${index})" title="Hủy">
                 <i class="fas fa-times"></i>
             </button>
+            <button class="btn btn-sm btn-danger" onclick="deleteTonKhoItem(${index})" title="Xóa">
+                <i class="fas fa-trash"></i>
+            </button>
         </td>
     `;
 }
@@ -1224,8 +1231,34 @@ async function deleteTonKhoItem(index) {
     
     console.log('🗑️ deleteTonKhoItem called with index:', index);
     
-    // Confirm deletion
-    if (!confirm('Bạn có chắc chắn muốn xóa item này?')) {
+    // Get item data for confirmation dialog
+    const cachedData = window.admin.getCacheData('tonkho');
+    if (!cachedData.data || !cachedData.data.rows) {
+        console.error('No TonKho data found');
+        return;
+    }
+    
+    const item = cachedData.data.rows[index];
+    if (!item) {
+        console.error('Item not found at index:', index);
+        return;
+    }
+    
+    // Confirm deletion with better warning
+    const confirmMessage = `⚠️ CẢNH BÁO: Bạn có chắc chắn muốn XÓA VĨNH VIỄN item này?
+
+📋 Thông tin item:
+• IMEI: ${item[5] || 'N/A'}
+• Dòng Máy: ${item[2] || 'N/A'}
+• Dung Lượng: ${item[3] || 'N/A'}
+• Màu Sắc: ${item[4] || 'N/A'}
+
+🚨 Hành động này KHÔNG THỂ hoàn tác!
+Item sẽ bị xóa khỏi Tồn Kho và không thể khôi phục.
+
+Bạn có chắc chắn muốn tiếp tục?`;
+    
+    if (!confirm(confirmMessage)) {
         return;
     }
     
