@@ -144,9 +144,6 @@
             <div class="filters-mobile">
                 <!-- IMEI V5 Real-time Filter -->
                 <div class="filter-card">
-                    <label class="filter-label">
-                        <i class="fas fa-qrcode"></i> IMEI V5
-                    </label>
                     <div class="filter-input-group">
                         <input 
                             type="text" 
@@ -162,73 +159,63 @@
                 </div>
 
                 <!-- Dòng Máy Mobile Multi-Select -->
-                <div>
-                    <label class="filter-label">
-                        <i class="fas fa-mobile-alt"></i> Dòng Máy
-                    </label>
-                    <div class="mobile-multiselect">
-                        <button class="multiselect-btn" id="dongMayBtn" type="button">
-                            <i class="fas fa-mobile-alt"></i>
-                            <span>Dòng Máy</span>
-                            <span class="count" id="dongMayCount">Tất cả</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="multiselect-dropdown" id="dongMayDropdown" style="display:none">
-                            <div class="multiselect-search">
-                                <input 
-                                    type="text" 
-                                    placeholder="🔍 Tìm dòng máy..." 
-                                    id="dongMaySearchInput"
-                                    class="multiselect-search-input"
-                                >
-                            </div>
-                            <div class="multiselect-options" id="dongMayOptions">
-                                <!-- Dynamic options sẽ được populate -->
-                            </div>
-                            <div class="multiselect-actions">
-                                <button class="btn-select-all" onclick="selectAllDongMay()">
-                                    Chọn tất cả
-                                </button>
-                                <button class="btn-clear-all" onclick="clearAllDongMay()">
-                                    Bỏ chọn
-                                </button>
-                            </div>
+                <div class="mobile-multiselect">
+                    <button class="multiselect-btn" id="dongMayBtn" type="button">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Dòng Máy</span>
+                        <span class="count" id="dongMayCount">Tất cả</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="dongMayDropdown" style="display:none">
+                        <div class="multiselect-search">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Tìm dòng máy..." 
+                                id="dongMaySearchInput"
+                                class="multiselect-search-input"
+                            >
+                        </div>
+                        <div class="multiselect-options" id="dongMayOptions">
+                            <!-- Dynamic options sẽ được populate -->
+                        </div>
+                        <div class="multiselect-actions">
+                            <button class="btn-select-all" onclick="selectAllDongMay()">
+                                Chọn tất cả
+                            </button>
+                            <button class="btn-clear-all" onclick="clearAllDongMay()">
+                                Bỏ chọn
+                            </button>
                         </div>
                     </div>
                 </div>
 
                 <!-- Dung Lượng Mobile Multi-Select -->
-                <div>
-                    <label class="filter-label">
-                        <i class="fas fa-database"></i> Dung Lượng
-                    </label>
-                    <div class="mobile-multiselect">
-                        <button class="multiselect-btn" id="dungLuongBtn" type="button">
-                            <i class="fas fa-database"></i>
-                            <span>Dung Lượng</span>
-                            <span class="count" id="dungLuongCount">Tất cả</span>
-                            <i class="fas fa-chevron-down"></i>
-                        </button>
-                        <div class="multiselect-dropdown" id="dungLuongDropdown" style="display:none">
-                            <div class="multiselect-search">
-                                <input 
-                                    type="text" 
-                                    placeholder="🔍 Tìm dung lượng..." 
-                                    id="dungLuongSearchInput"
-                                    class="multiselect-search-input"
-                                >
-                            </div>
-                            <div class="multiselect-options" id="dungLuongOptions">
-                                <!-- Dynamic options sẽ được populate -->
-                            </div>
-                            <div class="multiselect-actions">
-                                <button class="btn-select-all" onclick="selectAllDungLuong()">
-                                    Chọn tất cả
-                                </button>
-                                <button class="btn-clear-all" onclick="clearAllDungLuong()">
-                                    Bỏ chọn
-                                </button>
-                            </div>
+                <div class="mobile-multiselect">
+                    <button class="multiselect-btn" id="dungLuongBtn" type="button">
+                        <i class="fas fa-database"></i>
+                        <span>Dung Lượng</span>
+                        <span class="count" id="dungLuongCount">Tất cả</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="dungLuongDropdown" style="display:none">
+                        <div class="multiselect-search">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Tìm dung lượng..." 
+                                id="dungLuongSearchInput"
+                                class="multiselect-search-input"
+                            >
+                        </div>
+                        <div class="multiselect-options" id="dungLuongOptions">
+                            <!-- Dynamic options sẽ được populate -->
+                        </div>
+                        <div class="multiselect-actions">
+                            <button class="btn-select-all" onclick="selectAllDungLuong()">
+                                Chọn tất cả
+                            </button>
+                            <button class="btn-clear-all" onclick="clearAllDungLuong()">
+                                Bỏ chọn
+                            </button>
                         </div>
                     </div>
                 </div>
