@@ -1163,6 +1163,8 @@ tr.edit-mode td:last-child {
     color: #495057;
     margin-bottom: 8px;
     font-size: 14px;
+    position: relative;
+    z-index: 1;
 }
 
 .filter-label i {
@@ -1175,6 +1177,10 @@ tr.edit-mode td:last-child {
     display: flex;
     align-items: center;
     gap: 10px;
+    background: white;
+    padding: 8px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .filter-input-number {
@@ -1206,9 +1212,8 @@ tr.edit-mode td:last-child {
 /* Mobile Multi-Select */
 .mobile-multiselect {
     position: relative;
-    background: white;
+    background: transparent;
     border-radius: 8px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .multiselect-btn {
@@ -1367,6 +1372,7 @@ tr.edit-mode td:last-child {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap: 15px;
+        align-items: start;
     }
     
     .filter-card {
@@ -1380,6 +1386,19 @@ tr.edit-mode td:last-child {
         border-radius: 8px;
         padding: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-top: 28px;
+    }
+    
+    .mobile-multiselect {
+        background: transparent;
+    }
+    
+    .multiselect-btn {
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-top: 28px;
     }
     
     .btn-clear-filters {
