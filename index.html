@@ -273,31 +273,103 @@
         <div id="nhaphang" class="module">
             <div class="module-header">
                 <h2><i class="fas fa-arrow-down"></i> Lịch Sử Nhập Hàng</h2>
-                <div class="actions">
-                    <button class="btn btn-primary" onclick="addNhapHang()">
-                        <i class="fas fa-plus"></i> Thêm Nhập
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="refreshNhapHang()">
+                        <i class="fas fa-sync-alt"></i> Làm Mới
                     </button>
-                    <button class="btn btn-info" onclick="exportNhapHang()">
-                        <i class="fas fa-download"></i> Export
-                    </button>
+                    <span id="nhaphangLastUpdate" class="last-update"></span>
                 </div>
             </div>
 
-            <!-- Filters -->
-            <div class="filters">
-                <div class="filter-group">
-                    <input type="date" id="nhapDateFrom" class="filter-input" placeholder="Từ ngày">
-                    <input type="date" id="nhapDateTo" class="filter-input" placeholder="Đến ngày">
-                    <input type="text" id="searchNhapHang" placeholder="🔍 Tìm theo IMEI, NCC..." class="filter-input">
-                    <select id="filterNCC" class="filter-select">
-                        <option value="">Tất cả NCC</option>
-                        <option value="NCC A">NCC A</option>
-                        <option value="NCC B">NCC B</option>
-                    </select>
-                    <button class="btn btn-info" onclick="applyNhapHangFilters()">
-                        <i class="fas fa-filter"></i> Lọc
-                    </button>
+            <!-- Mobile-Optimized Filters -->
+            <div class="filters-mobile">
+                <!-- IMEI V5 Real-time Filter -->
+                <div class="filter-card">
+                    <div class="filter-input-group">
+                        <input 
+                            type="text" 
+                            id="nhapImeiV5Search" 
+                            placeholder="🔍 Nhập 5 số cuối IMEI"
+                            maxlength="5"
+                            pattern="[0-9]*"
+                            inputmode="numeric"
+                            class="filter-input-number"
+                        >
+                        <span class="filter-count" id="nhapImeiV5Count"></span>
+                    </div>
                 </div>
+
+                <!-- Dòng Máy Mobile Multi-Select -->
+                <div class="mobile-multiselect">
+                    <button class="multiselect-btn" id="nhapDongMayBtn" type="button">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Dòng Máy</span>
+                        <span class="count" id="nhapDongMayCount">Tất cả</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="nhapDongMayDropdown" style="display:none">
+                        <div class="multiselect-search">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Tìm dòng máy..." 
+                                id="nhapDongMaySearchInput"
+                                class="multiselect-search-input"
+                            >
+                        </div>
+                        <div class="multiselect-options" id="nhapDongMayOptions">
+                            <!-- Dynamic options sẽ được populate -->
+                        </div>
+                        <div class="multiselect-actions">
+                            <button class="btn-select-all" onclick="selectAllNhapDongMay()">
+                                Chọn tất cả
+                            </button>
+                            <button class="btn-clear-all" onclick="clearAllNhapDongMay()">
+                                Bỏ chọn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dung Lượng Mobile Multi-Select -->
+                <div class="mobile-multiselect">
+                    <button class="multiselect-btn" id="nhapDungLuongBtn" type="button">
+                        <i class="fas fa-database"></i>
+                        <span>Dung Lượng</span>
+                        <span class="count" id="nhapDungLuongCount">Tất cả</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="nhapDungLuongDropdown" style="display:none">
+                        <div class="multiselect-search">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Tìm dung lượng..." 
+                                id="nhapDungLuongSearchInput"
+                                class="multiselect-search-input"
+                            >
+                        </div>
+                        <div class="multiselect-options" id="nhapDungLuongOptions">
+                            <!-- Dynamic options sẽ được populate -->
+                        </div>
+                        <div class="multiselect-actions">
+                            <button class="btn-select-all" onclick="selectAllNhapDungLuong()">
+                                Chọn tất cả
+                            </button>
+                            <button class="btn-clear-all" onclick="clearAllNhapDungLuong()">
+                                Bỏ chọn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clear All Filters Button -->
+                <button class="btn btn-danger btn-clear-filters" onclick="clearAllNhapHangFilters()">
+                    <i class="fas fa-times-circle"></i> Xóa tất cả bộ lọc
+                </button>
+            </div>
+
+            <!-- Filter Summary -->
+            <div class="filter-summary" id="nhapFilterSummary" style="display:none">
+                <span id="nhapFilterSummaryText"></span>
             </div>
 
             <!-- Data Table -->
@@ -307,15 +379,14 @@
                         <tr>
                             <th>STT</th>
                             <th>Ngày Nhập</th>
-                            <th>IMEI</th>
-                            <th>IMEI V5</th>
                             <th>Dòng Máy</th>
                             <th>Dung Lượng</th>
                             <th>Màu Sắc</th>
+                            <th>IMEI</th>
+                            <th>IMEI V5</th>
                             <th>Giá Nhập</th>
-                            <th>Nhà CC</th>
-                            <th>Mô Tả</th>
-                            <th>TX_NHAP</th>
+                            <th>Nhà Cung Cấp</th>
+                            <th>Mô Tả Nhập</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -327,13 +398,25 @@
 
             <!-- Pagination -->
             <div class="pagination">
-                <button class="btn btn-secondary" onclick="prevNhapHangPage()" id="prevNhapHangBtn">
-                    <i class="fas fa-chevron-left"></i> Trước
-                </button>
-                <span id="nhaphangPageInfo">Trang 1 / 1</span>
-                <button class="btn btn-secondary" onclick="nextNhapHangPage()" id="nextNhapHangBtn">
-                    Sau <i class="fas fa-chevron-right"></i>
-                </button>
+                <div class="pagination-controls">
+                    <div class="page-size-selector">
+                        <label for="nhaphangPageSize">Hiển thị:</label>
+                        <select id="nhaphangPageSize" onchange="changeNhapHangPageSize()" class="form-control">
+                            <option value="50" selected>50 bản ghi</option>
+                            <option value="100">100 bản ghi</option>
+                            <option value="200">200 bản ghi</option>
+                        </select>
+                    </div>
+                    <div class="page-navigation">
+                        <button class="btn btn-secondary" onclick="prevNhapHangPage()" id="prevNhapHangBtn">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </button>
+                        <span id="nhaphangPageInfo">Trang 1 / 1</span>
+                        <button class="btn btn-secondary" onclick="nextNhapHangPage()" id="nextNhapHangBtn">
+                            Sau <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
