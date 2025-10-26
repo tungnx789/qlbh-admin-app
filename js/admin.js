@@ -1831,7 +1831,9 @@ function applyTonKhoMobileFilters() {
         const beforeCount = filtered.length;
         filtered = filtered.filter(item => {
             const dongMay = getValue(item, 2, ['dongMay', 'DÒNG_MÁY', 'Dòng Máy']);
-            const isMatch = tonKhoFilterState.selectedDongMay.has(dongMay);
+            // Convert to string to handle type mismatch
+            const dongMayStr = String(dongMay);
+            const isMatch = tonKhoFilterState.selectedDongMay.has(dongMayStr);
             return isMatch;
         });
         console.log(`🔍 Dòng Máy: ${beforeCount} → ${filtered.length} rows`);
@@ -1851,10 +1853,12 @@ function applyTonKhoMobileFilters() {
         
         filtered = filtered.filter(item => {
             const dungLuong = getValue(item, 3, ['dungLuong', 'DUNG_LƯỢNG', 'Dung Lượng']);
-            const isMatch = tonKhoFilterState.selectedDungLuong.has(dungLuong);
+            // Convert to string to handle type mismatch
+            const dungLuongStr = String(dungLuong);
+            const isMatch = tonKhoFilterState.selectedDungLuong.has(dungLuongStr);
             
             if (!isMatch && filtered.length <= 5) {
-                console.log(`🔍 No match: "${dungLuong}" not in selected set`);
+                console.log(`🔍 No match: "${dungLuong}" (${typeof dungLuong}) → "${dungLuongStr}" not in selected set`);
             }
             
             return isMatch;
