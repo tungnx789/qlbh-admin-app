@@ -1544,6 +1544,34 @@ function initMultiSelectDropdowns() {
             }
         });
     }
+    
+    // Search functionality for Dong May
+    const dongMaySearchInput = document.getElementById('dongMaySearchInput');
+    if (dongMaySearchInput) {
+        dongMaySearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const options = document.querySelectorAll('#dongMayOptions .multiselect-option');
+            
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                option.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+            });
+        });
+    }
+    
+    // Search functionality for Dung Luong
+    const dungLuongSearchInput = document.getElementById('dungLuongSearchInput');
+    if (dungLuongSearchInput) {
+        dungLuongSearchInput.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const options = document.querySelectorAll('#dungLuongOptions .multiselect-option');
+            
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                option.style.display = text.includes(searchTerm) ? 'flex' : 'none';
+            });
+        });
+    }
 }
 
 // Populate filter options from data
