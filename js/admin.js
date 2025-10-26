@@ -1468,8 +1468,355 @@ function changeTonKhoPageSize() {
     }
 }
 
+// ============================================
+// MOBILE-OPTIMIZED FILTERS FOR TONKHO
+// ============================================
+
+// Global filter state
+let tonKhoFilterState = {
+    imeiV5: '',
+    selectedDongMay: new Set(),
+    selectedDungLuong: new Set(),
+    allDongMayOptions: [],
+    allDungLuongOptions: []
+};
+
+// Initialize mobile filters when DOM is ready
+function initMobileFilters() {
+    console.log('🔧 Initializing mobile filters...');
+    
+    // IMEI V5 Real-time filter
+    const imeiV5Search = document.getElementById('imeiV5Search');
+    if (imeiV5Search) {
+        imeiV5Search.addEventListener('input', debounce((e) => {
+            const v5 = e.target.value.trim();
+            tonKhoFilterState.imeiV5 = v5;
+            
+            if (v5.length === 5) {
+                applyTonKhoMobileFilters();
+            } else if (v5.length === 0) {
+                applyTonKhoMobileFilters();
+            }
+        }, 300));
+    }
+    
+    // Initialize multi-select dropdowns
+    initMultiSelectDropdowns();
+    
+    console.log('✅ Mobile filters initialized');
+}
+
+// Initialize multi-select dropdowns
+function initMultiSelectDropdowns() {
+    // Dong May dropdown toggle
+    const dongMayBtn = document.getElementById('dongMayBtn');
+    const dongMayDropdown = document.getElementById('dongMayDropdown');
+    
+    if (dongMayBtn && dongMayDropdown) {
+        dongMayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = dongMayDropdown.style.display === 'none';
+            dongMayDropdown.style.display = isHidden ? 'block' : 'none';
+        });
+        
+        // Close on outside click
+        document.addEventListener('click', (e) => {
+            if (!dongMayDropdown.contains(e.target) && !dongMayBtn.contains(e.target)) {
+                dongMayDropdown.style.display = 'none';
+            }
+        });
+    }
+    
+    // Dung Luong dropdown toggle
+    const dungLuongBtn = document.getElementById('dungLuongBtn');
+    const dungLuongDropdown = document.getElementById('dungLuongDropdown');
+    
+    if (dungLuongBtn && dungLuongDropdown) {
+        dungLuongBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = dungLuongDropdown.style.display === 'none';
+            dungLuongDropdown.style.display = isHidden ? 'block' : 'none';
+        });
+        
+        document.addEventListener('click', (e) => {
+            if (!dungLuongDropdown.contains(e.target) && !dungLuongBtn.contains(e.target)) {
+                dungLuongDropdown.style.display = 'none';
+            }
+        });
+    }
+}
+
+// Populate filter options from data
+function populateFilterOptions(tonkhoData) {
+    if (!tonkhoData || !tonkhoData.rows) return;
+    
+    // Get unique Dòng Máy
+    const dongMaySet = new Set(tonkhoData.rows.map(item => item.dongMay).filter(Boolean));
+    tonKhoFilterState.allDongMayOptions = [...dongMaySet].sort();
+    
+    // Get unique Dung Lượng
+    const dungLuongSet = new Set(tonkhoData.rows.map(item => item.dungLuong).filter(Boolean));
+    tonKhoFilterState.allDungLuongOptions = [...dungLuongSet].sort();
+    
+    // Render Dong May options
+    renderDongMayOptions();
+    
+    // Render Dung Luong options
+    renderDungLuongOptions();
+}
+
+// Render Dong May options
+function renderDongMayOptions() {
+    const container = document.getElementById('dongMayOptions');
+    if (!container) return;
+    
+    const options = tonKhoFilterState.allDongMayOptions;
+    const selected = tonKhoFilterState.selectedDongMay;
+    
+    container.innerHTML = options.map(dongMay => `
+        <label class="multiselect-option">
+            <input 
+                type="checkbox" 
+                value="${dongMay}"
+                ${selected.has(dongMay) ? 'checked' : ''}
+                onchange="toggleDongMay('${dongMay}', this.checked)">
+            <span>${dongMay}</span>
+        </label>
+    `).join('');
+}
+
+// Render Dung Luong options
+function renderDungLuongOptions() {
+    const container = document.getElementById('dungLuongOptions');
+    if (!container) return;
+    
+    const options = tonKhoFilterState.allDungLuongOptions;
+    const selected = tonKhoFilterState.selectedDungLuong;
+    
+    container.innerHTML = options.map(dungLuong => `
+        <label class="multiselect-option">
+            <input 
+                type="checkbox" 
+                value="${dungLuong}"
+                ${selected.has(dungLuong) ? 'checked' : ''}
+                onchange="toggleDungLuong('${dungLuong}', this.checked)">
+            <span>${dungLuong}</span>
+        </label>
+    `).join('');
+}
+
+// Toggle Dong May selection
+function toggleDongMay(dongMay, selected) {
+    if (selected) {
+        tonKhoFilterState.selectedDongMay.add(dongMay);
+    } else {
+        tonKhoFilterState.selectedDongMay.delete(dongMay);
+    }
+    
+    updateDongMayCount();
+    applyTonKhoMobileFilters();
+}
+
+// Toggle Dung Luong selection
+function toggleDungLuong(dungLuong, selected) {
+    if (selected) {
+        tonKhoFilterState.selectedDungLuong.add(dungLuong);
+    } else {
+        tonKhoFilterState.selectedDungLuong.delete(dungLuong);
+    }
+    
+    updateDungLuongCount();
+    applyTonKhoMobileFilters();
+}
+
+// Update count displays
+function updateDongMayCount() {
+    const count = tonKhoFilterState.selectedDongMay.size;
+    const total = tonKhoFilterState.allDongMayOptions.length;
+    const countEl = document.getElementById('dongMayCount');
+    
+    if (countEl) {
+        if (count === 0 || count === total) {
+            countEl.textContent = 'Tất cả';
+        } else {
+            countEl.textContent = `${count}/${total}`;
+        }
+    }
+}
+
+function updateDungLuongCount() {
+    const count = tonKhoFilterState.selectedDungLuong.size;
+    const total = tonKhoFilterState.allDungLuongOptions.length;
+    const countEl = document.getElementById('dungLuongCount');
+    
+    if (countEl) {
+        if (count === 0 || count === total) {
+            countEl.textContent = 'Tất cả';
+        } else {
+            countEl.textContent = `${count}/${total}`;
+        }
+    }
+}
+
+// Select All / Clear All functions
+function selectAllDongMay() {
+    tonKhoFilterState.allDongMayOptions.forEach(dongMay => {
+        tonKhoFilterState.selectedDongMay.add(dongMay);
+    });
+    renderDongMayOptions();
+    updateDongMayCount();
+    applyTonKhoMobileFilters();
+}
+
+function clearAllDongMay() {
+    tonKhoFilterState.selectedDongMay.clear();
+    renderDongMayOptions();
+    updateDongMayCount();
+    applyTonKhoMobileFilters();
+}
+
+function selectAllDungLuong() {
+    tonKhoFilterState.allDungLuongOptions.forEach(dungLuong => {
+        tonKhoFilterState.selectedDungLuong.add(dungLuong);
+    });
+    renderDungLuongOptions();
+    updateDungLuongCount();
+    applyTonKhoMobileFilters();
+}
+
+function clearAllDungLuong() {
+    tonKhoFilterState.selectedDungLuong.clear();
+    renderDungLuongOptions();
+    updateDungLuongCount();
+    applyTonKhoMobileFilters();
+}
+
+// Clear all filters
+function clearAllTonKhoFilters() {
+    tonKhoFilterState.imeiV5 = '';
+    tonKhoFilterState.selectedDongMay.clear();
+    tonKhoFilterState.selectedDungLuong.clear();
+    
+    // Clear UI
+    const imeiInput = document.getElementById('imeiV5Search');
+    if (imeiInput) imeiInput.value = '';
+    
+    const imeiCount = document.getElementById('imeiV5Count');
+    if (imeiCount) imeiCount.textContent = '';
+    
+    renderDongMayOptions();
+    renderDungLuongOptions();
+    updateDongMayCount();
+    updateDungLuongCount();
+    
+    applyTonKhoMobileFilters();
+}
+
+// Apply mobile filters
+function applyTonKhoMobileFilters() {
+    if (!window.admin) return;
+    
+    const cachedData = window.admin.getCacheData('tonkho');
+    if (!cachedData || !cachedData.data || !cachedData.data.rows) {
+        console.log('⚠️ No data to filter');
+        return;
+    }
+    
+    let filtered = [...cachedData.data.rows];
+    
+    // IMEI V5 filter
+    if (tonKhoFilterState.imeiV5.length === 5) {
+        filtered = filtered.filter(item => {
+            const imeiV5 = item.imeiV5 ? item.imeiV5.toString() : '';
+            return imeiV5.includes(tonKhoFilterState.imeiV5);
+        });
+        
+        // Update count
+        const imeiCount = document.getElementById('imeiV5Count');
+        if (imeiCount) {
+            imeiCount.textContent = `${filtered.length}`;
+        }
+    } else {
+        const imeiCount = document.getElementById('imeiV5Count');
+        if (imeiCount) imeiCount.textContent = '';
+    }
+    
+    // Dong May filter
+    if (tonKhoFilterState.selectedDongMay.size > 0) {
+        filtered = filtered.filter(item => 
+            tonKhoFilterState.selectedDongMay.has(item.dongMay)
+        );
+    }
+    
+    // Dung Luong filter
+    if (tonKhoFilterState.selectedDungLuong.size > 0) {
+        filtered = filtered.filter(item => 
+            tonKhoFilterState.selectedDungLuong.has(item.dungLuong)
+        );
+    }
+    
+    // Display filtered data
+    if (filtered.length !== cachedData.data.rows.length) {
+        // Create filtered data structure
+        const filteredData = {
+            ...cachedData.data,
+            rows: filtered,
+            totalCount: filtered.length
+        };
+        
+        window.admin.renderTonKhoTableWithPagination(filteredData);
+        window.admin.updateTonKhoPaginationClientSide(filteredData);
+        
+        // Show filter summary
+        updateFilterSummary(filtered.length, cachedData.data.rows.length);
+    } else {
+        window.admin.renderTonKhoTableWithPagination(cachedData.data);
+        window.admin.updateTonKhoPaginationClientSide(cachedData.data);
+        
+        // Hide filter summary
+        document.getElementById('filterSummary').style.display = 'none';
+    }
+}
+
+// Update filter summary
+function updateFilterSummary(filtered, total) {
+    const summaryEl = document.getElementById('filterSummary');
+    const textEl = document.getElementById('filterSummaryText');
+    
+    if (summaryEl && textEl) {
+        summaryEl.style.display = 'block';
+        textEl.textContent = `Hiển thị ${filtered} / ${total} sản phẩm`;
+    }
+}
+
+// Debounce helper
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+
+// Override loadTonKho to initialize filters
+const originalLoadTonKho = QLBHAdmin.prototype.loadTonKho;
+QLBHAdmin.prototype.loadTonKho = async function() {
+    await originalLoadTonKho.call(this);
+    
+    // Initialize filter options after data loads
+    const cachedData = this.getCacheData('tonkho');
+    if (cachedData && cachedData.data) {
+        populateFilterOptions(cachedData.data);
+    }
+};
+
 // Initialize the app when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     window.admin = new QLBHAdmin();
-    console.log('QLBH Admin App initialized');
+    initMobileFilters();
+    console.log('QLBH Admin App initialized with mobile filters');
 });
