@@ -3,7 +3,7 @@ class QLBHAdmin {
     constructor() {
         this.currentModule = 'dashboard';
         this.currentPage = 1;
-        this.pageSize = 20;
+        this.pageSize = 50;  // Default 50 for Nhập Hàng (can be overridden per module)
         this.filters = {};
         this.data = {};
         
@@ -82,16 +82,26 @@ class QLBHAdmin {
             item.classList.remove('active');
         });
         document.querySelector(`[data-module="${moduleName}"]`).classList.add('active');
-
+        
         // Update modules
         document.querySelectorAll('.module').forEach(module => {
             module.classList.remove('active');
         });
         document.getElementById(moduleName).classList.add('active');
-
+        
         this.currentModule = moduleName;
         this.currentPage = 1;
-
+        
+        // Set page size based on module
+        if (moduleName === 'tonkho' || moduleName === 'nhaphang') {
+            this.pageSize = 50;
+            // Update the select element to reflect this
+            const selectElement = document.getElementById(`${moduleName}PageSize`);
+            if (selectElement) {
+                selectElement.value = '50';
+            }
+        }
+        
         // DON'T auto-load data - wait for user to click refresh button
         console.log('switchModule - Switched to:', moduleName, '- No auto-load');
     }
@@ -362,6 +372,20 @@ class QLBHAdmin {
 
     // TonKho Methods - Client-side Pagination
     async loadTonKho() {
+        // Check if filters are active - if yes, use filtered data and don't reload
+        if (typeof tonKhoFilterState !== 'undefined' && tonKhoFilterState.filteredData) {
+            console.log('🔍 loadTonKho - Filters are active, using filtered data instead of reloading');
+            this.renderTonKhoTableWithPagination(tonKhoFilterState.filteredData);
+            this.updateTonKhoPaginationClientSide(tonKhoFilterState.filteredData);
+            this.updateLastUpdateTime('tonkho');
+            return;
+        }
+        
+        // Only clear filtered data when loading fresh data (no active filters)
+        if (typeof tonKhoFilterState !== 'undefined') {
+            tonKhoFilterState.filteredData = null;
+        }
+        
         // Check cache first
         const cachedData = this.getCacheData('tonkho');
         if (cachedData.data) {
@@ -496,6 +520,20 @@ class QLBHAdmin {
 
     // NhapHang Methods
     async loadNhapHang() {
+        // Check if filters are active - if yes, use filtered data and don't reload
+        if (typeof nhapHangFilterState !== 'undefined' && nhapHangFilterState.filteredData) {
+            console.log('🔍 loadNhapHang - Filters are active, using filtered data instead of reloading');
+            this.renderNhapHangTableWithPagination(nhapHangFilterState.filteredData);
+            this.updateNhapHangPaginationClientSide(nhapHangFilterState.filteredData);
+            this.updateLastUpdateTime('nhaphang');
+            return;
+        }
+        
+        // Only clear filtered data when loading fresh data (no active filters)
+        if (typeof nhapHangFilterState !== 'undefined') {
+            nhapHangFilterState.filteredData = null;
+        }
+        
         // Check cache first
         const cachedData = this.getCacheData('nhaphang');
         if (cachedData.data) {
@@ -607,22 +645,31 @@ class QLBHAdmin {
     async prevNhapHangPage() {
         if (this.currentPage > 1) {
             this.currentPage--;
-            const cachedData = this.getCacheData('nhaphang');
-            if (cachedData && cachedData.data) {
-                this.renderNhapHangTableWithPagination(cachedData.data);
-                this.updateNhapHangPaginationClientSide(cachedData.data);
+            
+            // Check if filters are active - use filtered data
+            const dataToRender = (typeof nhapHangFilterState !== 'undefined' && nhapHangFilterState.filteredData) 
+                ? nhapHangFilterState.filteredData 
+                : this.getCacheData('nhaphang')?.data;
+                
+            if (dataToRender) {
+                this.renderNhapHangTableWithPagination(dataToRender);
+                this.updateNhapHangPaginationClientSide(dataToRender);
             }
         }
     }
 
     async nextNhapHangPage() {
-        const cachedData = this.getCacheData('nhaphang');
-        if (cachedData && cachedData.data) {
-            const totalPages = Math.ceil(cachedData.data.rows.length / this.pageSize);
+        // Check if filters are active - use filtered data
+        const dataToCheck = (typeof nhapHangFilterState !== 'undefined' && nhapHangFilterState.filteredData) 
+            ? nhapHangFilterState.filteredData 
+            : this.getCacheData('nhaphang')?.data;
+            
+        if (dataToCheck) {
+            const totalPages = Math.ceil(dataToCheck.rows.length / this.pageSize);
             if (this.currentPage < totalPages) {
                 this.currentPage++;
-                this.renderNhapHangTableWithPagination(cachedData.data);
-                this.updateNhapHangPaginationClientSide(cachedData.data);
+                this.renderNhapHangTableWithPagination(dataToCheck);
+                this.updateNhapHangPaginationClientSide(dataToCheck);
             }
         }
     }
@@ -633,10 +680,14 @@ class QLBHAdmin {
             this.pageSize = parseInt(selectEl.value);
             this.currentPage = 1;
             
-            const cachedData = this.getCacheData('nhaphang');
-            if (cachedData && cachedData.data) {
-                this.renderNhapHangTableWithPagination(cachedData.data);
-                this.updateNhapHangPaginationClientSide(cachedData.data);
+            // Check if filters are active - use filtered data
+            const dataToRender = (typeof nhapHangFilterState !== 'undefined' && nhapHangFilterState.filteredData) 
+                ? nhapHangFilterState.filteredData 
+                : this.getCacheData('nhaphang')?.data;
+                
+            if (dataToRender) {
+                this.renderNhapHangTableWithPagination(dataToRender);
+                this.updateNhapHangPaginationClientSide(dataToRender);
             }
         }
     }
@@ -993,23 +1044,33 @@ class QLBHAdmin {
         if (this.currentPage > 1) {
             this.currentPage--;
             console.log(`⬅️ prevTonKhoPage - Going to page ${this.currentPage}`);
-            // Re-render with cached data (no API call)
-            const cachedData = this.getCacheData('tonkho');
-            if (cachedData.data) {
-                this.renderTonKhoTableWithPagination(cachedData.data);
-                this.updateTonKhoPaginationClientSide(cachedData.data);
+            
+            // Check if filters are active - use filtered data
+            const dataToRender = (typeof tonKhoFilterState !== 'undefined' && tonKhoFilterState.filteredData) 
+                ? tonKhoFilterState.filteredData 
+                : this.getCacheData('tonkho')?.data;
+                
+            if (dataToRender) {
+                this.renderTonKhoTableWithPagination(dataToRender);
+                this.updateTonKhoPaginationClientSide(dataToRender);
             }
         }
     }
 
     nextTonKhoPage() {
-        this.currentPage++;
-        console.log(`➡️ nextTonKhoPage - Going to page ${this.currentPage}`);
-        // Re-render with cached data (no API call)
-        const cachedData = this.getCacheData('tonkho');
-        if (cachedData.data) {
-            this.renderTonKhoTableWithPagination(cachedData.data);
-            this.updateTonKhoPaginationClientSide(cachedData.data);
+        // Check if filters are active - use filtered data
+        const dataToCheck = (typeof tonKhoFilterState !== 'undefined' && tonKhoFilterState.filteredData) 
+            ? tonKhoFilterState.filteredData 
+            : this.getCacheData('tonkho')?.data;
+            
+        if (dataToCheck) {
+            const totalPages = Math.ceil(dataToCheck.rows.length / this.pageSize);
+            if (this.currentPage < totalPages) {
+                this.currentPage++;
+                console.log(`➡️ nextTonKhoPage - Going to page ${this.currentPage}`);
+                this.renderTonKhoTableWithPagination(dataToCheck);
+                this.updateTonKhoPaginationClientSide(dataToCheck);
+            }
         }
     }
 
@@ -1471,18 +1532,21 @@ function prevTonKhoPage() {
     if (window.admin.currentPage > 1) {
         window.admin.currentPage--;
         console.log(`⬅️ prevTonKhoPage - Going to page ${window.admin.currentPage}`);
-        // Re-render with cached data (no API call)
-        const cachedData = window.admin.getCacheData('tonkho');
-        console.log('🔍 prevTonKhoPage - Cached data:', cachedData);
         
-        if (cachedData && cachedData.data) {
-            console.log('🔍 prevTonKhoPage - Data structure:', cachedData.data);
-            console.log('🔍 prevTonKhoPage - Rows length:', cachedData.data.rows ? cachedData.data.rows.length : 'NO ROWS');
+        // Check if filters are active - use filtered data
+        const dataToRender = (typeof tonKhoFilterState !== 'undefined' && tonKhoFilterState.filteredData) 
+            ? tonKhoFilterState.filteredData 
+            : window.admin.getCacheData('tonkho')?.data;
+        
+        console.log('🔍 prevTonKhoPage - Using filtered data:', !!tonKhoFilterState?.filteredData);
+        
+        if (dataToRender) {
+            console.log('🔍 prevTonKhoPage - Rows length:', dataToRender.rows ? dataToRender.rows.length : 'NO ROWS');
             
-            window.admin.renderTonKhoTableWithPagination(cachedData.data);
-            window.admin.updateTonKhoPaginationClientSide(cachedData.data);
+            window.admin.renderTonKhoTableWithPagination(dataToRender);
+            window.admin.updateTonKhoPaginationClientSide(dataToRender);
         } else {
-            console.error('❌ prevTonKhoPage - No cached data found');
+            console.error('❌ prevTonKhoPage - No data found');
         }
     } else {
         console.log('🔍 prevTonKhoPage - Already at first page');
@@ -1497,25 +1561,27 @@ function nextTonKhoPage() {
     
     console.log(`🔍 nextTonKhoPage - Current page: ${window.admin.currentPage}`);
     
-    // Get current data to check total pages
-    const cachedData = window.admin.getCacheData('tonkho');
-    console.log('🔍 nextTonKhoPage - Cached data:', cachedData);
+    // Check if filters are active - use filtered data
+    const dataToCheck = (typeof tonKhoFilterState !== 'undefined' && tonKhoFilterState.filteredData) 
+        ? tonKhoFilterState.filteredData 
+        : window.admin.getCacheData('tonkho')?.data;
     
-    if (cachedData && cachedData.data) {
-        const totalPages = Math.ceil(cachedData.data.rows.length / window.admin.pageSize);
+    console.log('🔍 nextTonKhoPage - Using filtered data:', !!tonKhoFilterState?.filteredData);
+    
+    if (dataToCheck) {
+        const totalPages = Math.ceil(dataToCheck.rows.length / window.admin.pageSize);
         console.log(`🔍 nextTonKhoPage - Total pages: ${totalPages}, Current: ${window.admin.currentPage}`);
         
         if (window.admin.currentPage < totalPages) {
             window.admin.currentPage++;
             console.log(`➡️ nextTonKhoPage - Going to page ${window.admin.currentPage}`);
-            // Re-render with cached data (no API call)
-            window.admin.renderTonKhoTableWithPagination(cachedData.data);
-            window.admin.updateTonKhoPaginationClientSide(cachedData.data);
+            window.admin.renderTonKhoTableWithPagination(dataToCheck);
+            window.admin.updateTonKhoPaginationClientSide(dataToCheck);
         } else {
             console.log('🔍 nextTonKhoPage - Already at last page');
         }
     } else {
-        console.error('❌ nextTonKhoPage - No cached data found');
+        console.error('❌ nextTonKhoPage - No data found');
     }
 }
 
@@ -1535,18 +1601,21 @@ function changeTonKhoPageSize() {
             window.admin.currentPage = 1; // Reset to first page
             console.log(`📄 changeTonKhoPageSize - New page size: ${newPageSize}`);
             
-            // Re-render with cached data (no API call)
-            const cachedData = window.admin.getCacheData('tonkho');
-            console.log('🔍 changeTonKhoPageSize - Cached data:', cachedData);
-            
-            if (cachedData && cachedData.data) {
-                console.log('🔍 changeTonKhoPageSize - Data structure:', cachedData.data);
-                console.log('🔍 changeTonKhoPageSize - Rows length:', cachedData.data.rows ? cachedData.data.rows.length : 'NO ROWS');
+            // Check if filters are active - use filtered data
+            const dataToRender = (typeof tonKhoFilterState !== 'undefined' && tonKhoFilterState.filteredData) 
+                ? tonKhoFilterState.filteredData 
+                : window.admin.getCacheData('tonkho')?.data;
                 
-                window.admin.renderTonKhoTableWithPagination(cachedData.data);
-                window.admin.updateTonKhoPaginationClientSide(cachedData.data);
+            console.log('🔍 changeTonKhoPageSize - Using filtered data:', !!tonKhoFilterState?.filteredData);
+            
+            if (dataToRender) {
+                console.log('🔍 changeTonKhoPageSize - Data structure:', dataToRender);
+                console.log('🔍 changeTonKhoPageSize - Rows length:', dataToRender.rows ? dataToRender.rows.length : 'NO ROWS');
+                
+                window.admin.renderTonKhoTableWithPagination(dataToRender);
+                window.admin.updateTonKhoPaginationClientSide(dataToRender);
             } else {
-                console.error('❌ changeTonKhoPageSize - No cached data found');
+                console.error('❌ changeTonKhoPageSize - No data found');
             }
         } else {
             console.log('🔍 changeTonKhoPageSize - Same page size, no change needed');
@@ -1566,7 +1635,8 @@ let tonKhoFilterState = {
     selectedDongMay: new Set(),
     selectedDungLuong: new Set(),
     allDongMayOptions: [],
-    allDungLuongOptions: []
+    allDungLuongOptions: [],
+    filteredData: null  // Store filtered data for pagination
 };
 
 let nhapHangFilterState = {
@@ -1574,7 +1644,8 @@ let nhapHangFilterState = {
     selectedDongMay: new Set(),
     selectedDungLuong: new Set(),
     allDongMayOptions: [],
-    allDungLuongOptions: []
+    allDungLuongOptions: [],
+    filteredData: null  // Store filtered data for pagination
 };
 
 // Initialize mobile filters when DOM is ready
@@ -1587,12 +1658,7 @@ function initMobileFilters() {
         imeiV5Search.addEventListener('input', debounce((e) => {
             let v5 = e.target.value.trim();
             
-            // Pad với số 0 ở đầu nếu < 5 số (ví dụ: "7937" → "07937")
-            if (v5.length > 0 && v5.length < 5 && /^\d+$/.test(v5)) {
-                v5 = v5.padStart(5, '0');
-                e.target.value = v5;
-            }
-            
+            // Chỉ lưu giá trị đã nhập, không tự động pad
             tonKhoFilterState.imeiV5 = v5;
             
             if (v5.length === 5) {
@@ -1609,13 +1675,9 @@ function initMobileFilters() {
         nhapImeiV5Search.addEventListener('input', debounce((e) => {
             let v5 = e.target.value.trim();
             
-            if (v5.length > 0 && v5.length < 5 && /^\d+$/.test(v5)) {
-                v5 = v5.padStart(5, '0');
-                e.target.value = v5;
-            }
-            
+            // Chỉ lưu giá trị đã nhập, không tự động pad
             nhapHangFilterState.imeiV5 = v5;
-            
+
             if (v5.length === 5) {
                 applyNhapHangMobileFilters();
             } else if (v5.length === 0) {
@@ -2012,10 +2074,16 @@ function applyTonKhoMobileFilters() {
             totalCount: filtered.length
         };
         
+        // Store filtered data for pagination
+        tonKhoFilterState.filteredData = filteredData;
+        
         window.admin.renderTonKhoTableWithPagination(filteredData);
         window.admin.updateTonKhoPaginationClientSide(filteredData);
         updateFilterSummary(filtered.length, cachedData.data.rows.length);
     } else {
+        // Clear filtered data when no filters are active
+        tonKhoFilterState.filteredData = null;
+        
         window.admin.renderTonKhoTableWithPagination(cachedData.data);
         window.admin.updateTonKhoPaginationClientSide(cachedData.data);
         
@@ -2116,8 +2184,8 @@ function populateNhapHangFilterOptions(data) {
     
     data.rows.forEach(item => {
         if (Array.isArray(item)) {
-            if (item[4]) dongMaySet.add(item[4]);
-            if (item[5]) dungLuongSet.add(item[5]);
+            if (item[2]) dongMaySet.add(item[2]);  // DÒNG MÁY
+            if (item[3]) dungLuongSet.add(item[3]); // DUNG LƯỢNG
         }
     });
     
@@ -2230,6 +2298,7 @@ function clearAllNhapHangFilters() {
     nhapHangFilterState.imeiV5 = '';
     nhapHangFilterState.selectedDongMay.clear();
     nhapHangFilterState.selectedDungLuong.clear();
+    nhapHangFilterState.filteredData = null;  // Clear filtered data
     
     const imeiInput = document.getElementById('nhapImeiV5Search');
     if (imeiInput) imeiInput.value = '';
@@ -2263,7 +2332,7 @@ function applyNhapHangMobileFilters() {
     // IMEI V5 filter
     if (nhapHangFilterState.imeiV5.length === 5) {
         filtered = filtered.filter(item => {
-            const imeiV5 = getValue(item, 5).toString();
+            const imeiV5 = getValue(item, 6).toString();  // IMEI V5 at index 6
             return imeiV5.includes(nhapHangFilterState.imeiV5);
         });
     }
@@ -2271,7 +2340,7 @@ function applyNhapHangMobileFilters() {
     // Dong May filter
     if (nhapHangFilterState.selectedDongMay.size > 0) {
         filtered = filtered.filter(item => {
-            const dongMay = getValue(item, 4);
+            const dongMay = getValue(item, 2);  // DÒNG MÁY at index 2
             const dongMayStr = String(dongMay);
             return nhapHangFilterState.selectedDongMay.has(dongMayStr);
         });
@@ -2280,7 +2349,7 @@ function applyNhapHangMobileFilters() {
     // Dung Luong filter
     if (nhapHangFilterState.selectedDungLuong.size > 0) {
         filtered = filtered.filter(item => {
-            const dungLuong = getValue(item, 5);
+            const dungLuong = getValue(item, 3);  // DUNG LƯỢNG at index 3
             const dungLuongStr = String(dungLuong);
             return nhapHangFilterState.selectedDungLuong.has(dungLuongStr);
         });
@@ -2297,10 +2366,14 @@ function applyNhapHangMobileFilters() {
     
     if (hasFilters) {
         const filteredData = {...cachedData.data, rows: filtered, totalCount: filtered.length};
+        // Store filtered data for pagination
+        nhapHangFilterState.filteredData = filteredData;
         window.admin.renderNhapHangTableWithPagination(filteredData);
         window.admin.updateNhapHangPaginationClientSide(filteredData);
         updateNhapFilterSummary(filtered.length, cachedData.data.rows.length);
     } else {
+        // Clear filtered data when no filters are active
+        nhapHangFilterState.filteredData = null;
         window.admin.renderNhapHangTableWithPagination(cachedData.data);
         window.admin.updateNhapHangPaginationClientSide(cachedData.data);
         const summaryEl = document.getElementById('nhapFilterSummary');
@@ -2357,6 +2430,12 @@ async function nextNhapHangPage() {
 function changeNhapHangPageSize() {
     if (window.admin) {
         window.admin.changeNhapHangPageSize();
+    }
+}
+
+async function refreshNhapHang() {
+    if (window.admin) {
+        await window.admin.refreshNhapHang();
     }
 }
 
