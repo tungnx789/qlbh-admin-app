@@ -1841,9 +1841,22 @@ function applyTonKhoMobileFilters() {
     console.log('🔍 Applying Dung Lượng filter...');
     if (tonKhoFilterState.selectedDungLuong.size > 0) {
         const beforeCount = filtered.length;
+        
+        console.log('🔍 Selected Dung Luong set:', Array.from(tonKhoFilterState.selectedDungLuong));
+        console.log('🔍 Sample filtered items before Dung Luong filter:');
+        filtered.slice(0, 3).forEach(item => {
+            const dungLuong = getValue(item, 3, ['dungLuong', 'DUNG_LƯỢNG', 'Dung Lượng']);
+            console.log(`  - Item[3] = "${dungLuong}" (type: ${typeof dungLuong})`);
+        });
+        
         filtered = filtered.filter(item => {
             const dungLuong = getValue(item, 3, ['dungLuong', 'DUNG_LƯỢNG', 'Dung Lượng']);
             const isMatch = tonKhoFilterState.selectedDungLuong.has(dungLuong);
+            
+            if (!isMatch && filtered.length <= 5) {
+                console.log(`🔍 No match: "${dungLuong}" not in selected set`);
+            }
+            
             return isMatch;
         });
         console.log(`🔍 Dung Lượng: ${beforeCount} → ${filtered.length} rows`);
