@@ -1348,6 +1348,7 @@ tr.edit-mode td:last-child {
     font-weight: 600;
     cursor: pointer;
     transition: all 0.3s;
+    display: none; /* Hidden by default, shown when filters are active */
 }
 
 .btn-clear-filters:hover {
@@ -1372,20 +1373,15 @@ tr.edit-mode td:last-child {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap: 15px;
-        align-items: start;
+        align-items: stretch;
     }
     
     .filter-card {
         background: transparent;
         padding: 0;
         box-shadow: none;
-        min-height: 120px;
         display: flex;
-        flex-direction: column;
-    }
-    
-    .filter-card:has(.filter-input-group) {
-        min-height: auto;
+        height: 100%;
     }
     
     .filter-input-group {
@@ -1393,15 +1389,16 @@ tr.edit-mode td:last-child {
         border-radius: 8px;
         padding: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 28px;
+        width: 100%;
+        display: flex;
+        align-items: center;
     }
     
     .mobile-multiselect {
         background: transparent;
-        min-height: 56px;
         display: flex;
         flex-direction: column;
-        margin-top: 28px;
+        height: 100%;
     }
     
     .multiselect-btn {
@@ -1410,6 +1407,7 @@ tr.edit-mode td:last-child {
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         flex: 1;
+        min-height: 56px;
     }
     
     .btn-clear-filters {
