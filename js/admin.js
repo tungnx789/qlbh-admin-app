@@ -496,44 +496,75 @@ class QLBHAdmin {
 
     // NhapHang Methods
     async loadNhapHang() {
+        // Check cache first
+        const cachedData = this.getCacheData('nhaphang');
+        if (cachedData.data) {
+            console.log('📦 loadNhapHang - Using cached data');
+            this.renderNhapHangTable(cachedData.data);
+            this.updateNhapHangPagination(cachedData.data);
+            this.updateLastUpdateTime('nhaphang');
+            return;
+        }
+        
+        console.log('🌐 loadNhapHang - Loading all data from API');
         const params = {
-            page: this.currentPage,
-            pageSize: this.pageSize,
+            page: 1,
+            pageSize: 999999, // Load all records for client-side filtering
             ...this.filters.nhaphang
         };
         
         const response = await this.callAPI('getNhapHang', params);
         if (response && response.success) {
+            // Store all data in cache
+            this.setCacheData('nhaphang', response.data);
             this.renderNhapHangTable(response.data);
             this.updateNhapHangPagination(response.data);
+            this.updateLastUpdateTime('nhaphang');
+            console.log('✅ loadNhapHang - All data loaded and cached');
         }
     }
 
-    renderNhapHangTable(data) {
+    renderNhapHangTableWithPagination(data) {
+        console.log('🎨 renderNhapHangTableWithPagination - Starting render');
+        console.log('🎨 renderNhapHangTableWithPagination - Data:', data);
+        
         const tbody = document.getElementById('nhaphangTableBody');
+        if (!tbody) {
+            console.error('❌ renderNhapHangTableWithPagination - tbody not found');
+            return;
+        }
+        
         tbody.innerHTML = '';
 
         if (!data.rows || data.rows.length === 0) {
+            console.log('🎨 renderNhapHangTableWithPagination - No data to render');
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="12" class="text-center">Không có dữ liệu</td>';
+            row.innerHTML = '<td colspan="11" class="text-center">Không có dữ liệu</td>';
             tbody.appendChild(row);
             return;
         }
 
-        data.rows.forEach((item, index) => {
+        // Calculate pagination
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        const pageData = data.rows.slice(startIndex, endIndex);
+        
+        console.log(`📄 renderNhapHangTableWithPagination - Page ${this.currentPage}, showing ${pageData.length} items (${startIndex}-${endIndex-1})`);
+        console.log(`📄 renderNhapHangTableWithPagination - PageSize: ${this.pageSize}, Total rows: ${data.rows.length}`);
+        
+        pageData.forEach((item, index) => {
             const row = document.createElement('tr');
             row.innerHTML = `
-                <td>${(this.currentPage - 1) * this.pageSize + index + 1}</td>
+                <td>${startIndex + index + 1}</td>
                 <td>${this.formatDate(item[1])}</td>  <!-- NGÀY NHẬP -->
-                <td>${item[5] || ''}</td>  <!-- IMEI -->
-                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
                 <td>${item[2] || ''}</td>  <!-- DÒNG MÁY -->
                 <td>${item[3] || ''}</td>  <!-- DUNG LƯỢNG -->
                 <td>${item[4] || ''}</td>  <!-- MÀU SẮC -->
+                <td>${item[5] || ''}</td>  <!-- IMEI -->
+                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
                 <td>${this.formatCurrency(item[7] || 0)}</td>  <!-- GIÁ NHẬP -->
                 <td>${item[8] || ''}</td>  <!-- NHÀ CUNG CẤP -->
                 <td>${item[9] || ''}</td>  <!-- MÔ TẢ NHẬP -->
-                <td>${item[12] || ''}</td>  <!-- TX_NHAP -->
                 <td>
                     <button class="btn btn-sm btn-primary">
                         <i class="fas fa-edit"></i>
@@ -546,13 +577,68 @@ class QLBHAdmin {
             tbody.appendChild(row);
         });
     }
+    
+    renderNhapHangTable(data) {
+        this.renderNhapHangTableWithPagination(data);
+    }
 
-    updateNhapHangPagination(data) {
-        const totalPages = Math.ceil(data.totalRows / this.pageSize);
-        document.getElementById('nhaphangPageInfo').textContent = `Trang ${this.currentPage} / ${totalPages}`;
+    updateNhapHangPaginationClientSide(data) {
+        const totalPages = Math.ceil(data.rows.length / this.pageSize) || 1;
+        const pageInfoEl = document.getElementById('nhaphangPageInfo');
+        if (pageInfoEl) {
+            pageInfoEl.textContent = `Trang ${this.currentPage} / ${totalPages}`;
+        }
         
-        document.getElementById('prevNhapHangBtn').disabled = this.currentPage <= 1;
-        document.getElementById('nextNhapHangBtn').disabled = this.currentPage >= totalPages;
+        const prevBtn = document.getElementById('prevNhapHangBtn');
+        const nextBtn = document.getElementById('nextNhapHangBtn');
+        
+        if (prevBtn && nextBtn) {
+            prevBtn.disabled = this.currentPage <= 1;
+            nextBtn.disabled = this.currentPage >= totalPages;
+        }
+        
+        console.log(`📊 updateNhapHangPaginationClientSide - Page ${this.currentPage}/${totalPages}, ${data.rows.length} total records`);
+    }
+    
+    updateNhapHangPagination(data) {
+        this.updateNhapHangPaginationClientSide(data);
+    }
+
+    async prevNhapHangPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            const cachedData = this.getCacheData('nhaphang');
+            if (cachedData && cachedData.data) {
+                this.renderNhapHangTableWithPagination(cachedData.data);
+                this.updateNhapHangPaginationClientSide(cachedData.data);
+            }
+        }
+    }
+
+    async nextNhapHangPage() {
+        const cachedData = this.getCacheData('nhaphang');
+        if (cachedData && cachedData.data) {
+            const totalPages = Math.ceil(cachedData.data.rows.length / this.pageSize);
+            if (this.currentPage < totalPages) {
+                this.currentPage++;
+                this.renderNhapHangTableWithPagination(cachedData.data);
+                this.updateNhapHangPaginationClientSide(cachedData.data);
+            }
+        }
+    }
+
+    changeNhapHangPageSize() {
+        const selectEl = document.getElementById('nhaphangPageSize');
+        if (selectEl) {
+            this.pageSize = parseInt(selectEl.value);
+            this.currentPage = 1;
+            
+            const cachedData = this.getCacheData('nhaphang');
+            if (cachedData && cachedData.data) {
+                this.renderNhapHangTableWithPagination(cachedData.data);
+                this.updateNhapHangPaginationClientSide(cachedData.data);
+            }
+        }
     }
 
     async applyNhapHangFilters() {
@@ -1483,6 +1569,14 @@ let tonKhoFilterState = {
     allDungLuongOptions: []
 };
 
+let nhapHangFilterState = {
+    imeiV5: '',
+    selectedDongMay: new Set(),
+    selectedDungLuong: new Set(),
+    allDongMayOptions: [],
+    allDungLuongOptions: []
+};
+
 // Initialize mobile filters when DOM is ready
 function initMobileFilters() {
     console.log('🔧 Initializing mobile filters...');
@@ -1491,7 +1585,14 @@ function initMobileFilters() {
     const imeiV5Search = document.getElementById('imeiV5Search');
     if (imeiV5Search) {
         imeiV5Search.addEventListener('input', debounce((e) => {
-            const v5 = e.target.value.trim();
+            let v5 = e.target.value.trim();
+            
+            // Pad với số 0 ở đầu nếu < 5 số (ví dụ: "7937" → "07937")
+            if (v5.length > 0 && v5.length < 5 && /^\d+$/.test(v5)) {
+                v5 = v5.padStart(5, '0');
+                e.target.value = v5;
+            }
+            
             tonKhoFilterState.imeiV5 = v5;
             
             if (v5.length === 5) {
@@ -1502,8 +1603,30 @@ function initMobileFilters() {
         }, 300));
     }
     
-    // Initialize multi-select dropdowns
+    // Nhập Hàng IMEI V5 filter
+    const nhapImeiV5Search = document.getElementById('nhapImeiV5Search');
+    if (nhapImeiV5Search) {
+        nhapImeiV5Search.addEventListener('input', debounce((e) => {
+            let v5 = e.target.value.trim();
+            
+            if (v5.length > 0 && v5.length < 5 && /^\d+$/.test(v5)) {
+                v5 = v5.padStart(5, '0');
+                e.target.value = v5;
+            }
+            
+            nhapHangFilterState.imeiV5 = v5;
+            
+            if (v5.length === 5) {
+                applyNhapHangMobileFilters();
+            } else if (v5.length === 0) {
+                applyNhapHangMobileFilters();
+            }
+        }, 300));
+    }
+    
+    // Initialize multi-select dropdowns for both modules
     initMultiSelectDropdowns();
+    initNhapHangMultiSelectDropdowns();
     
     console.log('✅ Mobile filters initialized');
 }
@@ -1925,6 +2048,287 @@ function debounce(func, wait) {
     };
 }
 
+// ============================================
+// NHAP HANG FILTERS
+// ============================================
+
+// Initialize Nhập Hàng multi-select dropdowns
+function initNhapHangMultiSelectDropdowns() {
+    const btn = document.getElementById('nhapDongMayBtn');
+    const dropdown = document.getElementById('nhapDongMayDropdown');
+    
+    if (btn && dropdown) {
+        btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', (e) => {
+            if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+                dropdown.style.display = 'none';
+            }
+        });
+    }
+    
+    const dungLuongBtn = document.getElementById('nhapDungLuongBtn');
+    const dungLuongDropdown = document.getElementById('nhapDungLuongDropdown');
+    
+    if (dungLuongBtn && dungLuongDropdown) {
+        dungLuongBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dungLuongDropdown.style.display = dungLuongDropdown.style.display === 'none' ? 'block' : 'none';
+        });
+        document.addEventListener('click', (e) => {
+            if (!dungLuongDropdown.contains(e.target) && !dungLuongBtn.contains(e.target)) {
+                dungLuongDropdown.style.display = 'none';
+            }
+        });
+    }
+    
+    // Search for Dong May
+    const searchInput = document.getElementById('nhapDongMaySearchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('#nhapDongMayOptions .multiselect-option').forEach(opt => {
+                opt.style.display = opt.textContent.toLowerCase().includes(term) ? 'flex' : 'none';
+            });
+        });
+    }
+    
+    // Search for Dung Luong
+    const searchInput2 = document.getElementById('nhapDungLuongSearchInput');
+    if (searchInput2) {
+        searchInput2.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('#nhapDungLuongOptions .multiselect-option').forEach(opt => {
+                opt.style.display = opt.textContent.toLowerCase().includes(term) ? 'flex' : 'none';
+            });
+        });
+    }
+}
+
+// Populate filter options for Nhập Hàng
+function populateNhapHangFilterOptions(data) {
+    if (!data || !data.rows) return;
+    
+    const dongMaySet = new Set();
+    const dungLuongSet = new Set();
+    
+    data.rows.forEach(item => {
+        if (Array.isArray(item)) {
+            if (item[4]) dongMaySet.add(item[4]);
+            if (item[5]) dungLuongSet.add(item[5]);
+        }
+    });
+    
+    nhapHangFilterState.allDongMayOptions = [...dongMaySet].sort();
+    nhapHangFilterState.allDungLuongOptions = [...dungLuongSet].sort();
+    
+    renderNhapDongMayOptions();
+    renderNhapDungLuongOptions();
+}
+
+function renderNhapDongMayOptions() {
+    const container = document.getElementById('nhapDongMayOptions');
+    if (!container) return;
+    
+    const options = nhapHangFilterState.allDongMayOptions;
+    const selected = nhapHangFilterState.selectedDongMay;
+    
+    container.innerHTML = options.map(item => `
+        <label class="multiselect-option">
+            <input type="checkbox" value="${item}" ${selected.has(item) ? 'checked' : ''}
+                   onchange="toggleNhapDongMay('${item}', this.checked)">
+            <span>${item}</span>
+        </label>
+    `).join('');
+}
+
+function renderNhapDungLuongOptions() {
+    const container = document.getElementById('nhapDungLuongOptions');
+    if (!container) return;
+    
+    const options = nhapHangFilterState.allDungLuongOptions;
+    const selected = nhapHangFilterState.selectedDungLuong;
+    
+    container.innerHTML = options.map(item => `
+        <label class="multiselect-option">
+            <input type="checkbox" value="${item}" ${selected.has(item) ? 'checked' : ''}
+                   onchange="toggleNhapDungLuong('${item}', this.checked)">
+            <span>${item}</span>
+        </label>
+    `).join('');
+}
+
+function toggleNhapDongMay(dongMay, selected) {
+    if (selected) {
+        nhapHangFilterState.selectedDongMay.add(dongMay);
+    } else {
+        nhapHangFilterState.selectedDongMay.delete(dongMay);
+    }
+    updateNhapDongMayCount();
+    renderNhapDongMayOptions();
+    applyNhapHangMobileFilters();
+}
+
+function toggleNhapDungLuong(dungLuong, selected) {
+    if (selected) {
+        nhapHangFilterState.selectedDungLuong.add(dungLuong);
+    } else {
+        nhapHangFilterState.selectedDungLuong.delete(dungLuong);
+    }
+    updateNhapDungLuongCount();
+    renderNhapDungLuongOptions();
+    applyNhapHangMobileFilters();
+}
+
+function updateNhapDongMayCount() {
+    const countEl = document.getElementById('nhapDongMayCount');
+    if (countEl) {
+        const size = nhapHangFilterState.selectedDongMay.size;
+        countEl.textContent = size === 0 ? 'Tất cả' : size === 1 ? '1 đã chọn' : `${size} đã chọn`;
+    }
+}
+
+function updateNhapDungLuongCount() {
+    const countEl = document.getElementById('nhapDungLuongCount');
+    if (countEl) {
+        const size = nhapHangFilterState.selectedDungLuong.size;
+        countEl.textContent = size === 0 ? 'Tất cả' : size === 1 ? '1 đã chọn' : `${size} đã chọn`;
+    }
+}
+
+function selectAllNhapDongMay() {
+    nhapHangFilterState.allDongMayOptions.forEach(item => nhapHangFilterState.selectedDongMay.add(item));
+    updateNhapDongMayCount();
+    renderNhapDongMayOptions();
+    applyNhapHangMobileFilters();
+}
+
+function clearAllNhapDongMay() {
+    nhapHangFilterState.selectedDongMay.clear();
+    updateNhapDongMayCount();
+    renderNhapDongMayOptions();
+    applyNhapHangMobileFilters();
+}
+
+function selectAllNhapDungLuong() {
+    nhapHangFilterState.allDungLuongOptions.forEach(item => nhapHangFilterState.selectedDungLuong.add(item));
+    updateNhapDungLuongCount();
+    renderNhapDungLuongOptions();
+    applyNhapHangMobileFilters();
+}
+
+function clearAllNhapDungLuong() {
+    nhapHangFilterState.selectedDungLuong.clear();
+    updateNhapDungLuongCount();
+    renderNhapDungLuongOptions();
+    applyNhapHangMobileFilters();
+}
+
+function clearAllNhapHangFilters() {
+    nhapHangFilterState.imeiV5 = '';
+    nhapHangFilterState.selectedDongMay.clear();
+    nhapHangFilterState.selectedDungLuong.clear();
+    
+    const imeiInput = document.getElementById('nhapImeiV5Search');
+    if (imeiInput) imeiInput.value = '';
+    
+    renderNhapDongMayOptions();
+    renderNhapDungLuongOptions();
+    updateNhapDongMayCount();
+    updateNhapDungLuongCount();
+    
+    applyNhapHangMobileFilters();
+    
+    const clearBtn = document.querySelector('#nhaphang .btn-clear-filters');
+    if (clearBtn) clearBtn.style.display = 'none';
+}
+
+function applyNhapHangMobileFilters() {
+    if (!window.admin) return;
+    
+    const cachedData = window.admin.getCacheData('nhaphang');
+    if (!cachedData || !cachedData.data || !cachedData.data.rows) return;
+    
+    let filtered = [...cachedData.data.rows];
+    
+    function getValue(item, arrayIndex) {
+        if (Array.isArray(item)) {
+            return item[arrayIndex] || '';
+        }
+        return '';
+    }
+    
+    // IMEI V5 filter
+    if (nhapHangFilterState.imeiV5.length === 5) {
+        filtered = filtered.filter(item => {
+            const imeiV5 = getValue(item, 5).toString();
+            return imeiV5.includes(nhapHangFilterState.imeiV5);
+        });
+    }
+    
+    // Dong May filter
+    if (nhapHangFilterState.selectedDongMay.size > 0) {
+        filtered = filtered.filter(item => {
+            const dongMay = getValue(item, 4);
+            const dongMayStr = String(dongMay);
+            return nhapHangFilterState.selectedDongMay.has(dongMayStr);
+        });
+    }
+    
+    // Dung Luong filter
+    if (nhapHangFilterState.selectedDungLuong.size > 0) {
+        filtered = filtered.filter(item => {
+            const dungLuong = getValue(item, 5);
+            const dungLuongStr = String(dungLuong);
+            return nhapHangFilterState.selectedDungLuong.has(dungLuongStr);
+        });
+    }
+    
+    const hasFilters = nhapHangFilterState.imeiV5.length === 5 || 
+                      nhapHangFilterState.selectedDongMay.size > 0 || 
+                      nhapHangFilterState.selectedDungLuong.size > 0;
+    
+    const clearBtn = document.querySelector('#nhaphang .btn-clear-filters');
+    if (clearBtn) {
+        clearBtn.style.display = hasFilters ? 'block' : 'none';
+    }
+    
+    if (hasFilters) {
+        const filteredData = {...cachedData.data, rows: filtered, totalCount: filtered.length};
+        window.admin.renderNhapHangTableWithPagination(filteredData);
+        window.admin.updateNhapHangPaginationClientSide(filteredData);
+        updateNhapFilterSummary(filtered.length, cachedData.data.rows.length);
+    } else {
+        window.admin.renderNhapHangTableWithPagination(cachedData.data);
+        window.admin.updateNhapHangPaginationClientSide(cachedData.data);
+        const summaryEl = document.getElementById('nhapFilterSummary');
+        if (summaryEl) summaryEl.style.display = 'none';
+    }
+}
+
+function updateNhapFilterSummary(filtered, total) {
+    const summaryEl = document.getElementById('nhapFilterSummary');
+    const textEl = document.getElementById('nhapFilterSummaryText');
+    
+    if (summaryEl && textEl) {
+        summaryEl.style.display = 'block';
+        textEl.textContent = `Hiển thị ${filtered} / ${total} bản ghi`;
+    }
+}
+
+// Override loadNhapHang to populate filter options
+const originalLoadNhapHang = QLBHAdmin.prototype.loadNhapHang;
+QLBHAdmin.prototype.loadNhapHang = async function() {
+    await originalLoadNhapHang.call(this);
+    
+    const cachedData = this.getCacheData('nhaphang');
+    if (cachedData && cachedData.data) {
+        populateNhapHangFilterOptions(cachedData.data);
+    }
+};
+
 // Override loadTonKho to initialize filters
 const originalLoadTonKho = QLBHAdmin.prototype.loadTonKho;
 QLBHAdmin.prototype.loadTonKho = async function() {
@@ -1936,6 +2340,25 @@ QLBHAdmin.prototype.loadTonKho = async function() {
         populateFilterOptions(cachedData.data);
     }
 };
+
+// Global helper functions for Nhập Hàng
+async function prevNhapHangPage() {
+    if (window.admin) {
+        await window.admin.prevNhapHangPage();
+    }
+}
+
+async function nextNhapHangPage() {
+    if (window.admin) {
+        await window.admin.nextNhapHangPage();
+    }
+}
+
+function changeNhapHangPageSize() {
+    if (window.admin) {
+        window.admin.changeNhapHangPageSize();
+    }
+}
 
 // Initialize the app when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
