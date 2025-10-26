@@ -1379,6 +1379,13 @@ tr.edit-mode td:last-child {
         background: transparent;
         padding: 0;
         box-shadow: none;
+        min-height: 120px;
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-card:has(.filter-input-group) {
+        min-height: auto;
     }
     
     .filter-input-group {
@@ -1391,6 +1398,10 @@ tr.edit-mode td:last-child {
     
     .mobile-multiselect {
         background: transparent;
+        min-height: 56px;
+        display: flex;
+        flex-direction: column;
+        margin-top: 28px;
     }
     
     .multiselect-btn {
@@ -1398,7 +1409,7 @@ tr.edit-mode td:last-child {
         border: 2px solid #dee2e6;
         border-radius: 8px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-        margin-top: 28px;
+        flex: 1;
     }
     
     .btn-clear-filters {
