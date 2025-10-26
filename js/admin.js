@@ -1763,6 +1763,14 @@ function clearAllTonKhoFilters() {
     updateDungLuongCount();
     
     applyTonKhoMobileFilters();
+    
+    // Hide clear button after clearing
+    const clearBtn = document.querySelector('.btn-clear-filters');
+    if (clearBtn) clearBtn.style.display = 'none';
+    
+    // Hide filter summary
+    const summaryEl = document.getElementById('filterSummary');
+    if (summaryEl) summaryEl.style.display = 'none';
 }
 
 // Apply mobile filters
@@ -1838,6 +1846,16 @@ function applyTonKhoMobileFilters() {
     }
     
     // Display filtered data
+    const hasFilters = tonKhoFilterState.imeiV5.length === 5 || 
+                      tonKhoFilterState.selectedDongMay.size > 0 || 
+                      tonKhoFilterState.selectedDungLuong.size > 0;
+    
+    // Show/hide clear filters button
+    const clearBtn = document.querySelector('.btn-clear-filters');
+    if (clearBtn) {
+        clearBtn.style.display = hasFilters ? 'block' : 'none';
+    }
+    
     if (filtered.length !== cachedData.data.rows.length) {
         // Create filtered data structure
         const filteredData = {
@@ -1856,7 +1874,8 @@ function applyTonKhoMobileFilters() {
         window.admin.updateTonKhoPaginationClientSide(cachedData.data);
         
         // Hide filter summary
-        document.getElementById('filterSummary').style.display = 'none';
+        const summaryEl = document.getElementById('filterSummary');
+        if (summaryEl) summaryEl.style.display = 'none';
     }
 }
 
