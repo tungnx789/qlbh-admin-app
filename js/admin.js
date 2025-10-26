@@ -1826,23 +1826,27 @@ function applyTonKhoMobileFilters() {
     }
     
     // Dong May filter - Support both
+    console.log('🔍 Applying Dòng Máy filter...');
     if (tonKhoFilterState.selectedDongMay.size > 0) {
+        const beforeCount = filtered.length;
         filtered = filtered.filter(item => {
             const dongMay = getValue(item, 2, ['dongMay', 'DÒNG_MÁY', 'Dòng Máy']);
             const isMatch = tonKhoFilterState.selectedDongMay.has(dongMay);
-            console.log('🔍 Dong May check:', { dongMay, isMatch });
             return isMatch;
         });
+        console.log(`🔍 Dòng Máy: ${beforeCount} → ${filtered.length} rows`);
     }
     
     // Dung Luong filter - Support both
+    console.log('🔍 Applying Dung Lượng filter...');
     if (tonKhoFilterState.selectedDungLuong.size > 0) {
+        const beforeCount = filtered.length;
         filtered = filtered.filter(item => {
             const dungLuong = getValue(item, 3, ['dungLuong', 'DUNG_LƯỢNG', 'Dung Lượng']);
             const isMatch = tonKhoFilterState.selectedDungLuong.has(dungLuong);
-            console.log('🔍 Dung Luong check:', { dungLuong, isMatch });
             return isMatch;
         });
+        console.log(`🔍 Dung Lượng: ${beforeCount} → ${filtered.length} rows`);
     }
     
     // Display filtered data
@@ -1850,14 +1854,16 @@ function applyTonKhoMobileFilters() {
                       tonKhoFilterState.selectedDongMay.size > 0 || 
                       tonKhoFilterState.selectedDungLuong.size > 0;
     
+    console.log('✅ Final filtered count:', filtered.length);
+    
     // Show/hide clear filters button
     const clearBtn = document.querySelector('.btn-clear-filters');
     if (clearBtn) {
         clearBtn.style.display = hasFilters ? 'block' : 'none';
     }
     
-    if (filtered.length !== cachedData.data.rows.length) {
-        // Create filtered data structure
+    // Always render with filtered data if filters exist
+    if (hasFilters) {
         const filteredData = {
             ...cachedData.data,
             rows: filtered,
@@ -1866,14 +1872,11 @@ function applyTonKhoMobileFilters() {
         
         window.admin.renderTonKhoTableWithPagination(filteredData);
         window.admin.updateTonKhoPaginationClientSide(filteredData);
-        
-        // Show filter summary
         updateFilterSummary(filtered.length, cachedData.data.rows.length);
     } else {
         window.admin.renderTonKhoTableWithPagination(cachedData.data);
         window.admin.updateTonKhoPaginationClientSide(cachedData.data);
         
-        // Hide filter summary
         const summaryEl = document.getElementById('filterSummary');
         if (summaryEl) summaryEl.style.display = 'none';
     }
