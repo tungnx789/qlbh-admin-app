@@ -1550,12 +1550,14 @@ function initMultiSelectDropdowns() {
 function populateFilterOptions(tonkhoData) {
     if (!tonkhoData || !tonkhoData.rows) return;
     
-    // Get unique Dòng Máy
-    const dongMaySet = new Set(tonkhoData.rows.map(item => item.dongMay).filter(Boolean));
+    console.log('🔍 populateFilterOptions - Data structure:', tonkhoData.rows[0]);
+    
+    // Get unique Dòng Máy - FIX: item[2] (index 2)
+    const dongMaySet = new Set(tonkhoData.rows.map(item => item[2]).filter(Boolean));
     tonKhoFilterState.allDongMayOptions = [...dongMaySet].sort();
     
-    // Get unique Dung Lượng
-    const dungLuongSet = new Set(tonkhoData.rows.map(item => item.dungLuong).filter(Boolean));
+    // Get unique Dung Lượng - FIX: item[3] (index 3)
+    const dungLuongSet = new Set(tonkhoData.rows.map(item => item[3]).filter(Boolean));
     tonKhoFilterState.allDungLuongOptions = [...dungLuongSet].sort();
     
     // Render Dong May options
@@ -1563,6 +1565,11 @@ function populateFilterOptions(tonkhoData) {
     
     // Render Dung Luong options
     renderDungLuongOptions();
+    
+    console.log('✅ Filter options populated:', {
+        dongMay: tonKhoFilterState.allDongMayOptions,
+        dungLuong: tonKhoFilterState.allDungLuongOptions
+    });
 }
 
 // Render Dong May options
@@ -1724,10 +1731,10 @@ function applyTonKhoMobileFilters() {
     
     let filtered = [...cachedData.data.rows];
     
-    // IMEI V5 filter
+    // IMEI V5 filter - FIX: item[6] (index 6)
     if (tonKhoFilterState.imeiV5.length === 5) {
         filtered = filtered.filter(item => {
-            const imeiV5 = item.imeiV5 ? item.imeiV5.toString() : '';
+            const imeiV5 = item[6] ? item[6].toString() : '';
             return imeiV5.includes(tonKhoFilterState.imeiV5);
         });
         
@@ -1741,17 +1748,17 @@ function applyTonKhoMobileFilters() {
         if (imeiCount) imeiCount.textContent = '';
     }
     
-    // Dong May filter
+    // Dong May filter - FIX: item[2] (index 2)
     if (tonKhoFilterState.selectedDongMay.size > 0) {
         filtered = filtered.filter(item => 
-            tonKhoFilterState.selectedDongMay.has(item.dongMay)
+            tonKhoFilterState.selectedDongMay.has(item[2])
         );
     }
     
-    // Dung Luong filter
+    // Dung Luong filter - FIX: item[3] (index 3)
     if (tonKhoFilterState.selectedDungLuong.size > 0) {
         filtered = filtered.filter(item => 
-            tonKhoFilterState.selectedDungLuong.has(item.dungLuong)
+            tonKhoFilterState.selectedDungLuong.has(item[3])
         );
     }
     
