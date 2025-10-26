@@ -1153,10 +1153,8 @@ tr.edit-mode td:last-child {
 
 /* Filter Card */
 .filter-card {
-    background: white;
-    border-radius: 8px;
-    padding: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    padding: 0;
+    box-shadow: none;
 }
 
 .filter-label {
@@ -1369,6 +1367,19 @@ tr.edit-mode td:last-child {
         display: grid;
         grid-template-columns: 1fr 1fr 1fr;
         gap: 15px;
+    }
+    
+    .filter-card {
+        background: transparent;
+        padding: 0;
+        box-shadow: none;
+    }
+    
+    .filter-input-group {
+        background: white;
+        border-radius: 8px;
+        padding: 8px;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
     
     .btn-clear-filters {
