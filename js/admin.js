@@ -1550,26 +1550,44 @@ function initMultiSelectDropdowns() {
 function populateFilterOptions(tonkhoData) {
     if (!tonkhoData || !tonkhoData.rows) return;
     
-    console.log('🔍 populateFilterOptions - Data structure:', tonkhoData.rows[0]);
+    console.log('🔍 populateFilterOptions - First item sample:', tonkhoData.rows[0]);
+    console.log('🔍 Is array?', Array.isArray(tonkhoData.rows[0]));
     
-    // Get unique Dòng Máy - FIX: item[2] (index 2)
-    const dongMaySet = new Set(tonkhoData.rows.map(item => item[2]).filter(Boolean));
+    // Try to detect structure
+    const firstItem = tonkhoData.rows[0];
+    
+    // Get unique Dòng Máy - Support both array and object
+    const dongMaySet = new Set();
+    const dungLuongSet = new Set();
+    
+    tonkhoData.rows.forEach(item => {
+        // Try array first
+        if (Array.isArray(item)) {
+            if (item[2]) dongMaySet.add(item[2]);
+            if (item[3]) dungLuongSet.add(item[3]);
+        } else {
+            // Try object with different possible property names
+            if (item.dongMay) dongMaySet.add(item.dongMay);
+            if (item.DÒNG_MÁY) dongMaySet.add(item.DÒNG_MÁY);
+            if (item['Dòng Máy']) dongMaySet.add(item['Dòng Máy']);
+            
+            if (item.dungLuong) dungLuongSet.add(item.dungLuong);
+            if (item.DUNG_LƯỢNG) dungLuongSet.add(item.DUNG_LƯỢNG);
+            if (item['Dung Lượng']) dungLuongSet.add(item['Dung Lượng']);
+        }
+    });
+    
     tonKhoFilterState.allDongMayOptions = [...dongMaySet].sort();
-    
-    // Get unique Dung Lượng - FIX: item[3] (index 3)
-    const dungLuongSet = new Set(tonkhoData.rows.map(item => item[3]).filter(Boolean));
     tonKhoFilterState.allDungLuongOptions = [...dungLuongSet].sort();
     
-    // Render Dong May options
-    renderDongMayOptions();
-    
-    // Render Dung Luong options
-    renderDungLuongOptions();
-    
-    console.log('✅ Filter options populated:', {
+    console.log('✅ Extracted options:', {
         dongMay: tonKhoFilterState.allDongMayOptions,
         dungLuong: tonKhoFilterState.allDungLuongOptions
     });
+    
+    // Render
+    renderDongMayOptions();
+    renderDungLuongOptions();
 }
 
 // Render Dong May options
@@ -1729,12 +1747,35 @@ function applyTonKhoMobileFilters() {
         return;
     }
     
+    console.log('🔍 Filter Debug - Checking data structure:');
+    console.log('🔍 First item:', cachedData.data.rows[0]);
+    console.log('🔍 Item type:', Array.isArray(cachedData.data.rows[0]) ? 'ARRAY' : 'OBJECT');
+    
     let filtered = [...cachedData.data.rows];
     
-    // IMEI V5 filter - FIX: item[6] (index 6)
+    // Helper function to get value from item
+    function getValue(item, arrayIndex, objectProps) {
+        if (Array.isArray(item)) {
+            return item[arrayIndex] || '';
+        } else {
+            for (const prop of objectProps) {
+                if (item[prop] !== undefined) return item[prop];
+            }
+            return '';
+        }
+    }
+    
+    // IMEI V5 filter - Support both array and object
     if (tonKhoFilterState.imeiV5.length === 5) {
         filtered = filtered.filter(item => {
-            const imeiV5 = item[6] ? item[6].toString() : '';
+            const imeiV5 = getValue(item, 6, ['imeiV5', 'IMEI_V5', 'IMEI V5', 'imeiV5']).toString();
+            
+            console.log('🔍 IMEI V5 check:', {
+                input: tonKhoFilterState.imeiV5,
+                itemV5: imeiV5,
+                match: imeiV5.includes(tonKhoFilterState.imeiV5)
+            });
+            
             return imeiV5.includes(tonKhoFilterState.imeiV5);
         });
         
@@ -1748,18 +1789,24 @@ function applyTonKhoMobileFilters() {
         if (imeiCount) imeiCount.textContent = '';
     }
     
-    // Dong May filter - FIX: item[2] (index 2)
+    // Dong May filter - Support both
     if (tonKhoFilterState.selectedDongMay.size > 0) {
-        filtered = filtered.filter(item => 
-            tonKhoFilterState.selectedDongMay.has(item[2])
-        );
+        filtered = filtered.filter(item => {
+            const dongMay = getValue(item, 2, ['dongMay', 'DÒNG_MÁY', 'Dòng Máy']);
+            const isMatch = tonKhoFilterState.selectedDongMay.has(dongMay);
+            console.log('🔍 Dong May check:', { dongMay, isMatch });
+            return isMatch;
+        });
     }
     
-    // Dung Luong filter - FIX: item[3] (index 3)
+    // Dung Luong filter - Support both
     if (tonKhoFilterState.selectedDungLuong.size > 0) {
-        filtered = filtered.filter(item => 
-            tonKhoFilterState.selectedDungLuong.has(item[3])
-        );
+        filtered = filtered.filter(item => {
+            const dungLuong = getValue(item, 3, ['dungLuong', 'DUNG_LƯỢNG', 'Dung Lượng']);
+            const isMatch = tonKhoFilterState.selectedDungLuong.has(dungLuong);
+            console.log('🔍 Dung Luong check:', { dungLuong, isMatch });
+            return isMatch;
+        });
     }
     
     // Display filtered data
