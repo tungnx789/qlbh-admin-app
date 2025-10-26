@@ -368,6 +368,7 @@ class QLBHAdmin {
             console.log('📦 loadTonKho - Using cached data');
             this.renderTonKhoTableWithPagination(cachedData.data);
             this.updateTonKhoPaginationClientSide(cachedData.data);
+            this.updateLastUpdateTime('tonkho');
             return;
         }
         
@@ -385,6 +386,7 @@ class QLBHAdmin {
             this.setCacheData('tonkho', response.data);
             this.renderTonKhoTableWithPagination(response.data);
             this.updateTonKhoPaginationClientSide(response.data);
+            this.updateLastUpdateTime('tonkho');
             console.log('✅ loadTonKho - All data loaded and cached');
         }
     }
