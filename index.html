@@ -140,27 +140,98 @@
                 </div>
             </div>
 
-            <!-- Filters -->
-            <div class="filters">
-                <div class="filter-group">
-                    <input type="text" id="searchTonKho" placeholder="🔍 Tìm theo IMEI, Dòng máy..." class="filter-input">
-                    <select id="filterDongMay" class="filter-select">
-                        <option value="">Tất cả dòng máy</option>
-                        <option value="iPhone 17 Pro Max">iPhone 17 Pro Max</option>
-                        <option value="iPhone 16 Pro">iPhone 16 Pro</option>
-                        <option value="iPhone 15 Pro Max">iPhone 15 Pro Max</option>
-                    </select>
-                    <select id="filterDungLuong" class="filter-select">
-                        <option value="">Tất cả dung lượng</option>
-                        <option value="128GB">128GB</option>
-                        <option value="256GB">256GB</option>
-                        <option value="512GB">512GB</option>
-                        <option value="1TB">1TB</option>
-                    </select>
-                    <button class="btn btn-info" onclick="applyTonKhoFilters()">
-                        <i class="fas fa-filter"></i> Lọc
-                    </button>
+            <!-- Mobile-Optimized Filters -->
+            <div class="filters-mobile">
+                <!-- IMEI V5 Real-time Filter -->
+                <div class="filter-card">
+                    <label class="filter-label">
+                        <i class="fas fa-qrcode"></i> IMEI V5
+                    </label>
+                    <div class="filter-input-group">
+                        <input 
+                            type="text" 
+                            id="imeiV5Search" 
+                            placeholder="🔍 Nhập 5 số cuối IMEI"
+                            maxlength="5"
+                            pattern="[0-9]*"
+                            inputmode="numeric"
+                            class="filter-input-number"
+                        >
+                        <span class="filter-count" id="imeiV5Count"></span>
+                    </div>
                 </div>
+
+                <!-- Dòng Máy Mobile Multi-Select -->
+                <div class="mobile-multiselect">
+                    <button class="multiselect-btn" id="dongMayBtn" type="button">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Dòng Máy</span>
+                        <span class="count" id="dongMayCount">Tất cả</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="dongMayDropdown" style="display:none">
+                        <div class="multiselect-search">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Tìm dòng máy..." 
+                                id="dongMaySearchInput"
+                                class="multiselect-search-input"
+                            >
+                        </div>
+                        <div class="multiselect-options" id="dongMayOptions">
+                            <!-- Dynamic options sẽ được populate -->
+                        </div>
+                        <div class="multiselect-actions">
+                            <button class="btn-select-all" onclick="selectAllDongMay()">
+                                Chọn tất cả
+                            </button>
+                            <button class="btn-clear-all" onclick="clearAllDongMay()">
+                                Bỏ chọn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dung Lượng Mobile Multi-Select -->
+                <div class="mobile-multiselect">
+                    <button class="multiselect-btn" id="dungLuongBtn" type="button">
+                        <i class="fas fa-database"></i>
+                        <span>Dung Lượng</span>
+                        <span class="count" id="dungLuongCount">Tất cả</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="dungLuongDropdown" style="display:none">
+                        <div class="multiselect-search">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Tìm dung lượng..." 
+                                id="dungLuongSearchInput"
+                                class="multiselect-search-input"
+                            >
+                        </div>
+                        <div class="multiselect-options" id="dungLuongOptions">
+                            <!-- Dynamic options sẽ được populate -->
+                        </div>
+                        <div class="multiselect-actions">
+                            <button class="btn-select-all" onclick="selectAllDungLuong()">
+                                Chọn tất cả
+                            </button>
+                            <button class="btn-clear-all" onclick="clearAllDungLuong()">
+                                Bỏ chọn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clear All Filters Button -->
+                <button class="btn btn-danger btn-clear-filters" onclick="clearAllTonKhoFilters()">
+                    <i class="fas fa-times-circle"></i> Xóa tất cả bộ lọc
+                </button>
+            </div>
+
+            <!-- Filter Summary -->
+            <div class="filter-summary" id="filterSummary" style="display:none">
+                <span id="filterSummaryText"></span>
             </div>
 
             <!-- Data Table -->
