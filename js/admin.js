@@ -14,6 +14,7 @@ class QLBHAdmin {
             nhaphang: { data: null, lastUpdate: null },
             banhang: { data: null, lastUpdate: null },
             xuathuy: { data: null, lastUpdate: null },
+            search: { data: null, lastUpdate: null },
             baocao: { data: null, lastUpdate: null },
             topproducts: { data: null, lastUpdate: null }
         };
@@ -484,6 +485,17 @@ class QLBHAdmin {
             pageInfo.textContent = `Trang ${this.currentPage} / ${totalPages} (${totalRows} bản ghi)`;
         }
         
+        // Update total records count
+        const totalRecordsEl = document.getElementById('tonkhoTotalRecordsCount');
+        if (totalRecordsEl) {
+            const cachedData = this.getCacheData('tonkho');
+            if (cachedData && cachedData.data) {
+                totalRecordsEl.textContent = cachedData.data.rows ? cachedData.data.rows.length : 0;
+            } else {
+                totalRecordsEl.textContent = totalRows;
+            }
+        }
+        
         const prevBtn = document.getElementById('prevTonKhoBtn');
         const nextBtn = document.getElementById('nextTonKhoBtn');
         
@@ -522,7 +534,6 @@ class QLBHAdmin {
     async loadNhapHang() {
         // Check if filters are active - if yes, use filtered data and don't reload
         if (typeof nhapHangFilterState !== 'undefined' && nhapHangFilterState.filteredData) {
-            console.log('🔍 loadNhapHang - Filters are active, using filtered data instead of reloading');
             this.renderNhapHangTableWithPagination(nhapHangFilterState.filteredData);
             this.updateNhapHangPaginationClientSide(nhapHangFilterState.filteredData);
             this.updateLastUpdateTime('nhaphang');
@@ -537,14 +548,11 @@ class QLBHAdmin {
         // Check cache first
         const cachedData = this.getCacheData('nhaphang');
         if (cachedData.data) {
-            console.log('📦 loadNhapHang - Using cached data');
             this.renderNhapHangTable(cachedData.data);
             this.updateNhapHangPagination(cachedData.data);
             this.updateLastUpdateTime('nhaphang');
             return;
         }
-        
-        console.log('🌐 loadNhapHang - Loading all data from API');
         const params = {
             page: 1,
             pageSize: 999999, // Load all records for client-side filtering
@@ -558,37 +566,28 @@ class QLBHAdmin {
             this.renderNhapHangTable(response.data);
             this.updateNhapHangPagination(response.data);
             this.updateLastUpdateTime('nhaphang');
-            console.log('✅ loadNhapHang - All data loaded and cached');
         }
     }
 
     renderNhapHangTableWithPagination(data) {
-        console.log('🎨 renderNhapHangTableWithPagination - Starting render');
-        console.log('🎨 renderNhapHangTableWithPagination - Data:', data);
-        
         const tbody = document.getElementById('nhaphangTableBody');
         if (!tbody) {
-            console.error('❌ renderNhapHangTableWithPagination - tbody not found');
             return;
         }
         
         tbody.innerHTML = '';
 
         if (!data.rows || data.rows.length === 0) {
-            console.log('🎨 renderNhapHangTableWithPagination - No data to render');
             const row = document.createElement('tr');
             row.innerHTML = '<td colspan="11" class="text-center">Không có dữ liệu</td>';
             tbody.appendChild(row);
             return;
         }
-
+        
         // Calculate pagination
         const startIndex = (this.currentPage - 1) * this.pageSize;
         const endIndex = startIndex + this.pageSize;
         const pageData = data.rows.slice(startIndex, endIndex);
-        
-        console.log(`📄 renderNhapHangTableWithPagination - Page ${this.currentPage}, showing ${pageData.length} items (${startIndex}-${endIndex-1})`);
-        console.log(`📄 renderNhapHangTableWithPagination - PageSize: ${this.pageSize}, Total rows: ${data.rows.length}`);
         
         pageData.forEach((item, index) => {
             const row = document.createElement('tr');
@@ -602,7 +601,7 @@ class QLBHAdmin {
                 <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
                 <td>${this.formatCurrency(item[7] || 0)}</td>  <!-- GIÁ NHẬP -->
                 <td>${item[8] || ''}</td>  <!-- NHÀ CUNG CẤP -->
-                <td>${item[9] || ''}</td>  <!-- MÔ TẢ NHẬP -->
+                <td>${item[10] || ''}</td>  <!-- MÔ TẢ NHẬP (bỏ qua item[9] = ĐIỆN THOẠI) -->
                 <td>
                     <button class="btn btn-sm btn-primary">
                         <i class="fas fa-edit"></i>
@@ -624,7 +623,18 @@ class QLBHAdmin {
         const totalPages = Math.ceil(data.rows.length / this.pageSize) || 1;
         const pageInfoEl = document.getElementById('nhaphangPageInfo');
         if (pageInfoEl) {
-            pageInfoEl.textContent = `Trang ${this.currentPage} / ${totalPages}`;
+            pageInfoEl.textContent = `Trang ${this.currentPage} / ${totalPages} (${data.rows.length} bản ghi)`;
+        }
+        
+        // Update total records count
+        const totalRecordsEl = document.getElementById('nhaphangTotalRecordsCount');
+        if (totalRecordsEl) {
+            const cachedData = this.getCacheData('nhaphang');
+            if (cachedData && cachedData.data) {
+                totalRecordsEl.textContent = cachedData.data.rows ? cachedData.data.rows.length : 0;
+            } else {
+                totalRecordsEl.textContent = data.rows.length;
+            }
         }
         
         const prevBtn = document.getElementById('prevNhapHangBtn');
@@ -634,8 +644,6 @@ class QLBHAdmin {
             prevBtn.disabled = this.currentPage <= 1;
             nextBtn.disabled = this.currentPage >= totalPages;
         }
-        
-        console.log(`📊 updateNhapHangPaginationClientSide - Page ${this.currentPage}/${totalPages}, ${data.rows.length} total records`);
     }
     
     updateNhapHangPagination(data) {
@@ -705,72 +713,185 @@ class QLBHAdmin {
 
     // BanHang Methods
     async loadBanHang() {
-        const month = document.getElementById('monthSelector').value;
-        const params = {
-            month: month,
-            page: this.currentPage,
-            pageSize: this.pageSize
-        };
+        // Check if filters are active - if yes, use filtered data and don't reload
+        if (typeof banHangFilterState !== 'undefined' && banHangFilterState.filteredData) {
+            this.renderBanHangTableWithPagination(banHangFilterState.filteredData);
+            this.updateBanHangPaginationClientSide(banHangFilterState.filteredData);
+            this.updateLastUpdateTime('banhang');
+            return;
+        }
         
-        const response = await this.callAPI('getBanHang', params);
-        if (response && response.success) {
-            this.renderBanHangTable(response.data);
-            this.updateBanHangPagination(response.data);
-            this.updateBanHangSummary(response.data.statistics);
+        // Only clear filtered data when loading fresh data (no active filters)
+        if (typeof banHangFilterState !== 'undefined') {
+            banHangFilterState.filteredData = null;
+        }
+        
+        // Check cache first
+        const cachedData = this.getCacheData('banhang');
+        if (cachedData.data) {
+            this.renderBanHangTable(cachedData.data);
+            this.updateBanHangPagination(cachedData.data);
+            this.updateLastUpdateTime('banhang');
+            return;
         }
     }
 
     renderBanHangTable(data) {
+        this.renderBanHangTableWithPagination(data);
+    }
+
+    renderBanHangTableWithPagination(data) {
         const tbody = document.getElementById('banhangTableBody');
+        if (!tbody) return;
+        
         tbody.innerHTML = '';
 
         if (!data.rows || data.rows.length === 0) {
             const row = document.createElement('tr');
-            row.innerHTML = '<td colspan="13" class="text-center">Không có dữ liệu</td>';
+            row.innerHTML = '<td colspan="14" class="text-center">Không có dữ liệu</td>';
             tbody.appendChild(row);
             return;
         }
 
-        data.rows.forEach((item, index) => {
+        // Calculate pagination
+        const startIndex = (this.currentPage - 1) * this.pageSize;
+        const endIndex = startIndex + this.pageSize;
+        const pageData = data.rows.slice(startIndex, endIndex);
+
+        console.log('🔍 renderBanHangTable - First item structure:', pageData[0]);
+        console.log('🔍 renderBanHangTable - Total columns:', pageData[0] ? pageData[0].length : 0);
+        
+        pageData.forEach((item, index) => {
+            if (index === 0) {
+                console.log('🔍 renderBanHangTable - First row data (full):', item);
+                console.log('🔍 renderBanHangTable - item[0] (month):', item[0]);
+                console.log('🔍 renderBanHangTable - item[1] onwards:', item.slice(1));
+                
+                // Print each index for debugging
+                console.log('📋 Detailed breakdown:');
+                for (let i = 1; i < item.length; i++) {
+                    console.log(`  item[${i}] = ${item[i]} (type: ${typeof item[i]})`);
+                }
+            }
+            
             const row = document.createElement('tr');
+            // Based on actual log data:
+            // item[1] = STT (skip)
+            // item[2] = NGÀY BÁN
+            // item[3] = DÒNG MÁY
+            // item[4] = DUNG LƯỢNG
+            // item[5] = MÀU SẮC
+            // item[6] = IMEI
+            // item[7] = IMEI V5
+            // item[8] = GIÁ BÁN
+            // item[9] = KHÁCH HÀNG
+            // item[10] = empty
+            // item[11] = empty
+            // item[12] = GIÁ NHẬP (1300)
+            // item[13] = LỢI NHUẬN (11000)
+            // item[14] = NGÀY NHẬP ("2025-07-31T17:00:00.000Z")
+            // item[15] = NHÀ CUNG CẤP ("K/lẻ Nguyễn Thị Hương")
+            // item[16] = MÔ TẢ NHẬP ("Viền phẩy ít, có đk,pin 83")
+            
             row.innerHTML = `
-                <td>${(this.currentPage - 1) * this.pageSize + index + 1}</td>
-                <td>${this.formatDate(item[1])}</td>  <!-- NGÀY BÁN -->
-                <td>${item[5] || ''}</td>  <!-- IMEI -->
-                <td>${item[6] || ''}</td>  <!-- IMEI V5 -->
-                <td>${item[2] || ''}</td>  <!-- DÒNG MÁY -->
-                <td>${item[3] || ''}</td>  <!-- DUNG LƯỢNG -->
-                <td>${item[4] || ''}</td>  <!-- MÀU SẮC -->
-                <td>${this.formatCurrency(item[7] || 0)}</td>  <!-- GIÁ BÁN -->
-                <td>${this.formatCurrency(item[12] || 0)}</td>  <!-- GIÁ NHẬP -->
-                <td>${this.formatCurrency(item[11] || 0)}</td>  <!-- LỢI NHUẬN -->
-                <td>${item[8] || ''}</td>  <!-- KHÁCH HÀNG -->
-                <td>${item[10] || ''}</td>  <!-- MÔ TẢ BÁN -->
-                <td>
-                    <button class="btn btn-sm btn-primary">
-                        <i class="fas fa-edit"></i>
-                    </button>
-                    <button class="btn btn-sm btn-danger">
-                        <i class="fas fa-trash"></i>
-                    </button>
-                </td>
+                <td>${startIndex + index + 1}</td>
+                <td>${this.formatDate(item[2])}</td>  <!-- NGÀY BÁN -->
+                <td>${item[3] || ''}</td>  <!-- DÒNG MÁY -->
+                <td>${item[4] || ''}</td>  <!-- DUNG LƯỢNG -->
+                <td>${item[5] || ''}</td>  <!-- MÀU SẮC -->
+                <td>${item[6] || ''}</td>  <!-- IMEI -->
+                <td>${item[7] || ''}</td>  <!-- IMEI V5 -->
+                <td>${this.formatCurrency(item[8] || 0)}</td>  <!-- GIÁ BÁN -->
+                <td>${item[9] || ''}</td>  <!-- KHÁCH HÀNG -->
+                <td>${this.formatCurrency(item[12] || 0)}</td>  <!-- LỢI NHUẬN -->
+                <td>${this.formatCurrency(item[13] || 0)}</td>  <!-- GIÁ NHẬP -->
+                <td>${item[14] instanceof Date ? this.formatDate(item[14]) : (item[14] ? this.formatDate(new Date(item[14])) : '')}</td>  <!-- NGÀY NHẬP -->
+                <td>${item[15] || ''}</td>  <!-- NHÀ CUNG CẤP -->
+                <td>${item[16] || ''}</td>  <!-- MÔ TẢ NHẬP -->
             `;
             tbody.appendChild(row);
         });
     }
 
     updateBanHangPagination(data) {
-        const totalPages = Math.ceil(data.totalRows / this.pageSize);
-        document.getElementById('banhangPageInfo').textContent = `Trang ${this.currentPage} / ${totalPages}`;
-        
-        document.getElementById('prevBanHangBtn').disabled = this.currentPage <= 1;
-        document.getElementById('nextBanHangBtn').disabled = this.currentPage >= totalPages;
+        this.updateBanHangPaginationClientSide(data);
     }
 
-    updateBanHangSummary(statistics) {
-        document.getElementById('totalSales').textContent = statistics.totalBan || 0;
-        document.getElementById('totalRevenue').textContent = this.formatCurrency(statistics.totalRevenue || 0);
-        document.getElementById('totalProfit').textContent = this.formatCurrency(statistics.totalProfit || 0);
+    updateBanHangPaginationClientSide(data) {
+        const totalPages = Math.ceil(data.rows.length / this.pageSize) || 1;
+        const pageInfoEl = document.getElementById('banhangPageInfo');
+        if (pageInfoEl) {
+            pageInfoEl.textContent = `Trang ${this.currentPage} / ${totalPages} (${data.rows.length} bản ghi)`;
+        }
+        
+        // Update total records count
+        const totalRecordsEl = document.getElementById('banhangTotalRecordsCount');
+        if (totalRecordsEl) {
+            const cachedData = this.getCacheData('banhang');
+            if (cachedData && cachedData.data) {
+                totalRecordsEl.textContent = cachedData.data.rows ? cachedData.data.rows.length : 0;
+            } else {
+                totalRecordsEl.textContent = data.rows.length;
+            }
+        }
+        
+        const prevBtn = document.getElementById('prevBanHangBtn');
+        const nextBtn = document.getElementById('nextBanHangBtn');
+        
+        if (prevBtn && nextBtn) {
+            prevBtn.disabled = this.currentPage <= 1;
+            nextBtn.disabled = this.currentPage >= totalPages;
+        }
+    }
+
+    async prevBanHangPage() {
+        if (this.currentPage > 1) {
+            this.currentPage--;
+            
+            // Check if filters are active - use filtered data
+            const dataToRender = (typeof banHangFilterState !== 'undefined' && banHangFilterState.filteredData) 
+                ? banHangFilterState.filteredData 
+                : this.getCacheData('banhang')?.data;
+                
+            if (dataToRender) {
+                this.renderBanHangTableWithPagination(dataToRender);
+                this.updateBanHangPaginationClientSide(dataToRender);
+            }
+        }
+    }
+
+    async nextBanHangPage() {
+        // Check if filters are active - use filtered data
+        const dataToCheck = (typeof banHangFilterState !== 'undefined' && banHangFilterState.filteredData) 
+            ? banHangFilterState.filteredData 
+            : this.getCacheData('banhang')?.data;
+            
+        if (dataToCheck) {
+            const totalPages = Math.ceil(dataToCheck.rows.length / this.pageSize);
+            if (this.currentPage < totalPages) {
+                this.currentPage++;
+                this.renderBanHangTableWithPagination(dataToCheck);
+                this.updateBanHangPaginationClientSide(dataToCheck);
+            }
+        }
+    }
+
+    changeBanHangPageSize() {
+        const selectEl = document.getElementById('banhangPageSize');
+        if (selectEl) {
+            this.pageSize = parseInt(selectEl.value);
+            this.currentPage = 1;
+            
+            // Check if filters are active - use filtered data
+            const dataToRender = (typeof banHangFilterState !== 'undefined' && banHangFilterState.filteredData) 
+                ? banHangFilterState.filteredData 
+                : this.getCacheData('banhang')?.data;
+                
+            if (dataToRender) {
+                this.renderBanHangTableWithPagination(dataToRender);
+                this.updateBanHangPaginationClientSide(dataToRender);
+            }
+        }
     }
 
     // XuatHuy Methods
@@ -1086,17 +1207,7 @@ class QLBHAdmin {
         this.loadNhapHang();
     }
 
-    prevBanHangPage() {
-        if (this.currentPage > 1) {
-            this.currentPage--;
-            this.loadBanHang();
-        }
-    }
-
-    nextBanHangPage() {
-        this.currentPage++;
-        this.loadBanHang();
-    }
+    // Removed - using new methods above
 
     prevXuatHuyPage() {
         if (this.currentPage > 1) {
@@ -1254,12 +1365,26 @@ function exportNhapHang() {
     admin.showSuccess('Đang xuất dữ liệu...');
 }
 
-function loadBanHangMonth() {
-    admin.loadBanHang();
-}
-
 function addBanHang() {
     admin.showSuccess('Chức năng đang phát triển');
+}
+
+function prevBanHangPage() {
+    if (window.admin) {
+        window.admin.prevBanHangPage();
+    }
+}
+
+function nextBanHangPage() {
+    if (window.admin) {
+        window.admin.nextBanHangPage();
+    }
+}
+
+function changeBanHangPageSize() {
+    if (window.admin) {
+        window.admin.changeBanHangPageSize();
+    }
 }
 
 function addXuatHuy() {
@@ -1702,13 +1827,29 @@ function initMultiSelectDropdowns() {
     if (dongMayBtn && dongMayDropdown) {
         dongMayBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isHidden = dongMayDropdown.style.display === 'none';
-            dongMayDropdown.style.display = isHidden ? 'block' : 'none';
+            const isHidden = dongMayDropdown.style.display === 'none' || !dongMayDropdown.classList.contains('show');
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+                if (d !== dongMayDropdown) {
+                    d.classList.remove('show');
+                    d.style.display = 'none';
+                }
+            });
+            
+            if (isHidden) {
+                dongMayDropdown.classList.add('show');
+                dongMayDropdown.style.display = 'block';
+            } else {
+                dongMayDropdown.classList.remove('show');
+                dongMayDropdown.style.display = 'none';
+            }
         });
         
         // Close on outside click
         document.addEventListener('click', (e) => {
             if (!dongMayDropdown.contains(e.target) && !dongMayBtn.contains(e.target)) {
+                dongMayDropdown.classList.remove('show');
                 dongMayDropdown.style.display = 'none';
             }
         });
@@ -1721,12 +1862,28 @@ function initMultiSelectDropdowns() {
     if (dungLuongBtn && dungLuongDropdown) {
         dungLuongBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const isHidden = dungLuongDropdown.style.display === 'none';
-            dungLuongDropdown.style.display = isHidden ? 'block' : 'none';
+            const isHidden = dungLuongDropdown.style.display === 'none' || !dungLuongDropdown.classList.contains('show');
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+                if (d !== dungLuongDropdown) {
+                    d.classList.remove('show');
+                    d.style.display = 'none';
+                }
+            });
+            
+            if (isHidden) {
+                dungLuongDropdown.classList.add('show');
+                dungLuongDropdown.style.display = 'block';
+            } else {
+                dungLuongDropdown.classList.remove('show');
+                dungLuongDropdown.style.display = 'none';
+            }
         });
         
         document.addEventListener('click', (e) => {
             if (!dungLuongDropdown.contains(e.target) && !dungLuongBtn.contains(e.target)) {
+                dungLuongDropdown.classList.remove('show');
                 dungLuongDropdown.style.display = 'none';
             }
         });
@@ -2128,10 +2285,27 @@ function initNhapHangMultiSelectDropdowns() {
     if (btn && dropdown) {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            const isHidden = dropdown.style.display === 'none' || !dropdown.classList.contains('show');
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+                if (d !== dropdown) {
+                    d.classList.remove('show');
+                    d.style.display = 'none';
+                }
+            });
+            
+            if (isHidden) {
+                dropdown.classList.add('show');
+                dropdown.style.display = 'block';
+            } else {
+                dropdown.classList.remove('show');
+                dropdown.style.display = 'none';
+            }
         });
         document.addEventListener('click', (e) => {
             if (!dropdown.contains(e.target) && !btn.contains(e.target)) {
+                dropdown.classList.remove('show');
                 dropdown.style.display = 'none';
             }
         });
@@ -2143,10 +2317,27 @@ function initNhapHangMultiSelectDropdowns() {
     if (dungLuongBtn && dungLuongDropdown) {
         dungLuongBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            dungLuongDropdown.style.display = dungLuongDropdown.style.display === 'none' ? 'block' : 'none';
+            const isHidden = dungLuongDropdown.style.display === 'none' || !dungLuongDropdown.classList.contains('show');
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+                if (d !== dungLuongDropdown) {
+                    d.classList.remove('show');
+                    d.style.display = 'none';
+                }
+            });
+            
+            if (isHidden) {
+                dungLuongDropdown.classList.add('show');
+                dungLuongDropdown.style.display = 'block';
+            } else {
+                dungLuongDropdown.classList.remove('show');
+                dungLuongDropdown.style.display = 'none';
+            }
         });
         document.addEventListener('click', (e) => {
             if (!dungLuongDropdown.contains(e.target) && !dungLuongBtn.contains(e.target)) {
+                dungLuongDropdown.classList.remove('show');
                 dungLuongDropdown.style.display = 'none';
             }
         });
@@ -2439,9 +2630,951 @@ async function refreshNhapHang() {
     }
 }
 
+// ============================================
+// BAN HANG FILTER STATE
+// ============================================
+let banHangFilterState = {
+    selectedMonths: new Set(),
+    khachHang: '',
+    imeiV5: '',
+    selectedDongMay: new Set(),
+    selectedDungLuong: new Set(),
+    allDongMayOptions: [],
+    allDungLuongOptions: [],
+    allMonthOptions: [],
+    filteredData: null  // Store filtered data for pagination
+};
+
+// ============================================
+// BAN HANG METHODS
+// ============================================
+
+async function refreshBanHang() {
+    if (window.admin) {
+        banHangFilterState.filteredData = null;
+        await window.admin.loadBanHang();
+    }
+}
+
+function initBanHangFilters() {
+    // Initialize current month
+    const currentMonth = ('0' + (new Date().getMonth() + 1)).slice(-2);
+    banHangFilterState.selectedMonths.add(currentMonth);
+    updateBanHangMonthCount();
+    
+    // Initialize month options
+    banHangFilterState.allMonthOptions = Array.from({length: 12}, (_, i) => 
+        ('0' + (i + 1)).slice(-2)
+    );
+    renderBanHangMonthOptions();
+}
+
+// Month management
+function renderBanHangMonthOptions() {
+    const container = document.getElementById('banhangMonthOptions');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    banHangFilterState.allMonthOptions.forEach(month => {
+        const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
+                          'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+        const monthName = monthNames[parseInt(month) - 1];
+        
+        const option = document.createElement('div');
+        option.className = 'multiselect-option';
+        option.innerHTML = `
+            <label>
+                <input type="checkbox" value="${month}" 
+                       ${banHangFilterState.selectedMonths.has(month) ? 'checked' : ''} 
+                       onchange="toggleBanHangMonth('${month}')">
+                <span>${monthName}</span>
+            </label>
+        `;
+        // Make entire option clickable (but keep dropdown open)
+        option.onclick = function(e) {
+            e.stopPropagation(); // Prevent closing dropdown
+            if (e.target.tagName !== 'INPUT') {
+                toggleBanHangMonth(month);
+            }
+        };
+        container.appendChild(option);
+    });
+    
+    // Update button text
+    const btnText = document.getElementById('banhangMonthBtnText');
+    if (btnText && banHangFilterState.selectedMonths.size > 0) {
+        const monthNames = banHangFilterState.allMonthOptions
+            .filter(m => banHangFilterState.selectedMonths.has(m))
+            .map(m => {
+                const monthNames = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+                return monthNames[parseInt(m) - 1];
+            });
+        btnText.textContent = monthNames.join(', ');
+    } else if (btnText) {
+        btnText.textContent = 'Chọn tháng';
+    }
+}
+
+function toggleBanHangMonthDropdown() {
+    const dropdown = document.getElementById('banhangMonthDropdown');
+    if (dropdown) {
+        const isShown = dropdown.classList.contains('show');
+        
+        // Close all other dropdowns first
+        document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+            if (d !== dropdown) {
+                d.classList.remove('show');
+                d.style.display = 'none';
+            }
+        });
+        
+        if (isShown) {
+            dropdown.classList.remove('show');
+            dropdown.style.display = 'none';
+        } else {
+            dropdown.classList.add('show');
+            dropdown.style.display = 'block';
+        }
+    }
+}
+
+function toggleBanHangMonth(month) {
+    if (banHangFilterState.selectedMonths.has(month)) {
+        banHangFilterState.selectedMonths.delete(month);
+    } else {
+        banHangFilterState.selectedMonths.add(month);
+    }
+    updateBanHangMonthCount();
+    renderBanHangMonthOptions();
+}
+
+function updateBanHangMonthCount() {
+    const countEl = document.getElementById('banhangMonthCount');
+    if (countEl) {
+        countEl.textContent = banHangFilterState.selectedMonths.size;
+    }
+}
+
+function selectAllBanHangMonths() {
+    banHangFilterState.allMonthOptions.forEach(month => {
+        banHangFilterState.selectedMonths.add(month);
+    });
+    updateBanHangMonthCount();
+    renderBanHangMonthOptions();
+}
+
+function clearAllBanHangMonths() {
+    banHangFilterState.selectedMonths.clear();
+    updateBanHangMonthCount();
+    renderBanHangMonthOptions();
+}
+
+// Dong May and Dung Luong filters (similar to TonKho)
+function renderBanHangDongMayOptions() {
+    const container = document.getElementById('banhangDongMayOptions');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    banHangFilterState.allDongMayOptions.forEach(dongMay => {
+        const option = document.createElement('div');
+        option.className = 'multiselect-option';
+        option.innerHTML = `
+            <label>
+                <input type="checkbox" value="${dongMay}" 
+                       ${banHangFilterState.selectedDongMay.has(dongMay) ? 'checked' : ''} 
+                       onchange="toggleBanHangDongMay('${dongMay}')">
+                <span>${dongMay}</span>
+            </label>
+        `;
+        // Make entire option clickable (but keep dropdown open)
+        option.onclick = function(e) {
+            e.stopPropagation(); // Prevent closing dropdown
+            if (e.target.tagName !== 'INPUT') {
+                toggleBanHangDongMay(dongMay);
+            }
+        };
+        container.appendChild(option);
+    });
+}
+
+function toggleBanHangDongMay() {
+    const dropdown = document.getElementById('banhangDongMayDropdown');
+    if (dropdown) dropdown.classList.toggle('show');
+}
+
+function toggleBanHangDongMay(dongMay) {
+    if (banHangFilterState.selectedDongMay.has(dongMay)) {
+        banHangFilterState.selectedDongMay.delete(dongMay);
+    } else {
+        banHangFilterState.selectedDongMay.add(dongMay);
+    }
+    updateBanHangDongMayCount();
+    renderBanHangDongMayOptions();
+    applyBanHangFilters();
+}
+
+function updateBanHangDongMayCount() {
+    const countEl = document.getElementById('banhangDongMayCount');
+    if (countEl) {
+        countEl.textContent = banHangFilterState.selectedDongMay.size;
+    }
+}
+
+function selectAllBanHangDongMay() {
+    banHangFilterState.allDongMayOptions.forEach(dongMay => {
+        banHangFilterState.selectedDongMay.add(dongMay);
+    });
+    updateBanHangDongMayCount();
+    renderBanHangDongMayOptions();
+    applyBanHangFilters();
+}
+
+function clearAllBanHangDongMay() {
+    banHangFilterState.selectedDongMay.clear();
+    updateBanHangDongMayCount();
+    renderBanHangDongMayOptions();
+    applyBanHangFilters();
+}
+
+function renderBanHangDungLuongOptions() {
+    const container = document.getElementById('banhangDungLuongOptions');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    banHangFilterState.allDungLuongOptions.forEach(dungLuong => {
+        const option = document.createElement('div');
+        option.className = 'multiselect-option';
+        option.innerHTML = `
+            <label>
+                <input type="checkbox" value="${dungLuong}" 
+                       ${banHangFilterState.selectedDungLuong.has(dungLuong) ? 'checked' : ''} 
+                       onchange="toggleBanHangDungLuong('${dungLuong}')">
+                <span>${dungLuong}</span>
+            </label>
+        `;
+        // Make entire option clickable (but keep dropdown open)
+        option.onclick = function(e) {
+            e.stopPropagation(); // Prevent closing dropdown
+            if (e.target.tagName !== 'INPUT') {
+                toggleBanHangDungLuong(dungLuong);
+            }
+        };
+        container.appendChild(option);
+    });
+}
+
+function toggleBanHangDungLuong() {
+    const dropdown = document.getElementById('banhangDungLuongDropdown');
+    if (dropdown) dropdown.classList.toggle('show');
+}
+
+function toggleBanHangDungLuong(dungLuong) {
+    if (banHangFilterState.selectedDungLuong.has(dungLuong)) {
+        banHangFilterState.selectedDungLuong.delete(dungLuong);
+    } else {
+        banHangFilterState.selectedDungLuong.add(dungLuong);
+    }
+    updateBanHangDungLuongCount();
+    renderBanHangDungLuongOptions();
+    applyBanHangFilters();
+}
+
+function updateBanHangDungLuongCount() {
+    const countEl = document.getElementById('banhangDungLuongCount');
+    if (countEl) {
+        countEl.textContent = banHangFilterState.selectedDungLuong.size;
+    }
+}
+
+function selectAllBanHangDungLuong() {
+    banHangFilterState.allDungLuongOptions.forEach(dungLuong => {
+        banHangFilterState.selectedDungLuong.add(dungLuong);
+    });
+    updateBanHangDungLuongCount();
+    renderBanHangDungLuongOptions();
+    applyBanHangFilters();
+}
+
+function clearAllBanHangDungLuong() {
+    banHangFilterState.selectedDungLuong.clear();
+    updateBanHangDungLuongCount();
+    renderBanHangDungLuongOptions();
+    applyBanHangFilters();
+}
+
+function clearAllBanHangFilters() {
+    banHangFilterState.khachHang = '';
+    banHangFilterState.imeiV5 = '';
+    banHangFilterState.selectedDongMay.clear();
+    banHangFilterState.selectedDungLuong.clear();
+    banHangFilterState.filteredData = null;
+    
+    document.getElementById('banhangKhachHangSearch').value = '';
+    document.getElementById('banhangImeiV5Search').value = '';
+    
+    renderBanHangDongMayOptions();
+    renderBanHangDungLuongOptions();
+    updateBanHangDongMayCount();
+    updateBanHangDungLuongCount();
+    
+    applyBanHangFilters();
+    
+    const clearBtn = document.querySelector('#banhang .btn-clear-filters');
+    if (clearBtn) clearBtn.style.display = 'none';
+}
+
+function applyBanHangFilters() {
+    if (!window.admin) return;
+    
+    const cachedData = window.admin.getCacheData('banhang');
+    if (!cachedData || !cachedData.data || !cachedData.data.rows) return;
+    
+    let filtered = [...cachedData.data.rows];
+    
+    function getValue(item, index) {
+        if (Array.isArray(item)) {
+            return item[index] || '';
+        }
+        return '';
+    }
+    
+    // Khách Hàng filter
+    if (banHangFilterState.khachHang) {
+        filtered = filtered.filter(item => {
+            const khachHang = getValue(item, 9); // Khách Hàng at index 9 in BanHang (skip item[0]=month, item[1]=STT)
+            const khachHangStr = String(khachHang);
+            return khachHangStr.toLowerCase().includes(banHangFilterState.khachHang.toLowerCase());
+        });
+    }
+    
+    // IMEI V5 filter
+    if (banHangFilterState.imeiV5.length === 5) {
+        filtered = filtered.filter(item => {
+            const imeiV5 = getValue(item, 7).toString(); // IMEI V5 at index 7 in BanHang
+            return imeiV5.includes(banHangFilterState.imeiV5);
+        });
+    }
+    
+    // Dong May filter
+    if (banHangFilterState.selectedDongMay.size > 0) {
+        filtered = filtered.filter(item => {
+            const dongMay = getValue(item, 3); // Dòng Máy at index 3 in BanHang
+            const dongMayStr = String(dongMay);
+            return banHangFilterState.selectedDongMay.has(dongMayStr);
+        });
+    }
+    
+    // Dung Luong filter
+    if (banHangFilterState.selectedDungLuong.size > 0) {
+        filtered = filtered.filter(item => {
+            const dungLuong = getValue(item, 4); // Dung Lượng at index 4 in BanHang
+            const dungLuongStr = String(dungLuong);
+            return banHangFilterState.selectedDungLuong.has(dungLuongStr);
+        });
+    }
+    
+    const hasFilters = banHangFilterState.khachHang || 
+                      banHangFilterState.imeiV5.length === 5 || 
+                      banHangFilterState.selectedDongMay.size > 0 || 
+                      banHangFilterState.selectedDungLuong.size > 0;
+    
+    const clearBtn = document.querySelector('#banhang .btn-clear-filters');
+    if (clearBtn) {
+        clearBtn.style.display = hasFilters ? 'block' : 'none';
+    }
+    
+    if (hasFilters) {
+        const filteredData = {...cachedData.data, rows: filtered, totalCount: filtered.length};
+        banHangFilterState.filteredData = filteredData;
+        window.admin.renderBanHangTableWithPagination(filteredData);
+        window.admin.updateBanHangPaginationClientSide(filteredData);
+        updateBanHangFilterSummary(filtered.length, cachedData.data.rows.length);
+    } else {
+        banHangFilterState.filteredData = null;
+        window.admin.renderBanHangTableWithPagination(cachedData.data);
+        window.admin.updateBanHangPaginationClientSide(cachedData.data);
+        const summaryEl = document.getElementById('banhangFilterSummary');
+        if (summaryEl) summaryEl.style.display = 'none';
+    }
+}
+
+function updateBanHangFilterSummary(filtered, total) {
+    const summaryEl = document.getElementById('banhangFilterSummary');
+    const textEl = document.getElementById('banhangFilterSummaryText');
+    
+    if (summaryEl && textEl) {
+        summaryEl.style.display = 'block';
+        textEl.textContent = `Hiển thị ${filtered} / ${total} bản ghi`;
+    }
+}
+
+async function loadBanHangData() {
+    console.log('🚀 loadBanHangData - Starting...');
+    console.log('🚀 loadBanHangData - Selected months:', banHangFilterState.selectedMonths);
+    
+    if (banHangFilterState.selectedMonths.size === 0) {
+        alert('Vui lòng chọn ít nhất một tháng');
+        return;
+    }
+    
+    if (!window.admin) {
+        console.error('❌ loadBanHangData - window.admin is undefined');
+        return;
+    }
+    
+    // Show loading
+    window.admin.showLoading('Đang tải dữ liệu...');
+    
+    try {
+        const months = Array.from(banHangFilterState.selectedMonths);
+        const allData = [];
+        let allHeaders = null;
+        
+        console.log('📅 loadBanHangData - Loading data for months:', months);
+        
+        // Load data from all selected months
+        for (const month of months) {
+            console.log(`📅 loadBanHangData - Loading data for month: ${month}`);
+            
+            const response = await window.admin.callAPI('getBanHang', {
+                month: month,
+                page: 1,
+                pageSize: 999999
+            });
+            
+            console.log(`📅 loadBanHangData - Response for month ${month}:`, response);
+            
+            if (response && response.success && response.data && response.data.rows) {
+                console.log(`✅ loadBanHangData - Month ${month} loaded ${response.data.rows.length} rows`);
+                
+                // Add month indicator to each row
+                response.data.rows.forEach(row => {
+                    allData.push([month, ...row]); // Prepend month to row
+                });
+                
+                if (!allHeaders && response.data.headers) {
+                    allHeaders = response.data.headers;
+                    console.log('📋 loadBanHangData - Headers:', allHeaders);
+                }
+            } else {
+                console.warn(`⚠️ loadBanHangData - No data for month ${month}:`, response);
+            }
+        }
+        
+        console.log(`📊 loadBanHangData - Total rows loaded: ${allData.length}`);
+        
+        // Store in cache
+        const cacheData = {
+            headers: allHeaders,
+            rows: allData,
+            totalRows: allData.length
+        };
+        
+        window.admin.setCacheData('banhang', cacheData);
+        
+        // Populate filter options
+        populateBanHangFilterOptions(cacheData);
+        
+        // Render table
+        window.admin.renderBanHangTableWithPagination(cacheData);
+        window.admin.updateBanHangPaginationClientSide(cacheData);
+        window.admin.updateLastUpdateTime('banhang');
+        
+        console.log('✅ loadBanHangData - Completed successfully');
+        window.admin.hideLoading();
+    } catch (error) {
+        console.error('❌ loadBanHangData - Error:', error);
+        console.error('❌ loadBanHangData - Error details:', error.message, error.stack);
+        window.admin.hideLoading();
+        alert('Có lỗi xảy ra khi tải dữ liệu: ' + error.message);
+    }
+}
+
+function populateBanHangFilterOptions(data) {
+    const dongMaySet = new Set();
+    const dungLuongSet = new Set();
+    
+    data.rows.forEach(item => {
+        if (Array.isArray(item)) {
+            // item structure: [month, STT, NGÀY BÁN, DÒNG MÁY, DUNG LƯỢNG, MÀU SẮC, IMEI, IMEI V5, ...]
+            if (item[3]) dongMaySet.add(String(item[3])); // Dòng Máy at index 3
+            if (item[4]) dungLuongSet.add(String(item[4])); // Dung Lượng at index 4
+        }
+    });
+    
+    banHangFilterState.allDongMayOptions = [...dongMaySet].sort();
+    banHangFilterState.allDungLuongOptions = [...dungLuongSet].sort();
+    
+    console.log('📋 populateBanHangFilterOptions - Dòng Máy options:', banHangFilterState.allDongMayOptions);
+    console.log('📋 populateBanHangFilterOptions - Dung Lượng options:', banHangFilterState.allDungLuongOptions);
+    
+    renderBanHangDongMayOptions();
+    renderBanHangDungLuongOptions();
+}
+
+// Close dropdowns when clicking outside
+document.addEventListener('click', function(event) {
+    if (!event.target.closest('.mobile-multiselect')) {
+        // Close all dropdowns
+        document.querySelectorAll('.multiselect-dropdown.show').forEach(dropdown => {
+            dropdown.classList.remove('show');
+            dropdown.style.display = 'none';
+        });
+    }
+});
+
+// ============================================
+// SEARCH MODULE - Tìm Kiếm Khách Hàng
+// ============================================
+
+// Search state
+let searchState = {
+    customerName: '',
+    selectedMonths: new Set(),
+    allMonthOptions: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12'],
+    searchData: null,
+    currentPage: 1,
+    pageSize: 50
+};
+
+function initSearchFilters() {
+    console.log('🔍 Initializing search filters...');
+    
+    // Default: select current month to current month
+    // Format month as "01", "02", ... "12" to match API expectation
+    const currentMonth = new Date().getMonth() + 1;
+    for (let i = 1; i <= currentMonth; i++) {
+        const monthStr = ('0' + i).slice(-2); // Format as "01", "02", etc.
+        searchState.selectedMonths.add(monthStr);
+    }
+    
+    renderSearchMonthOptions();
+    updateSearchMonthCount();
+    
+    console.log('✅ Search filters initialized, selected months:', [...searchState.selectedMonths]);
+}
+
+function renderSearchMonthOptions() {
+    const container = document.getElementById('searchMonthOptions');
+    if (!container) return;
+    
+    container.innerHTML = '';
+    
+    searchState.allMonthOptions.forEach(month => {
+        const monthNames = ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5', 'Tháng 6', 
+                          'Tháng 7', 'Tháng 8', 'Tháng 9', 'Tháng 10', 'Tháng 11', 'Tháng 12'];
+        const monthName = monthNames[parseInt(month) - 1];
+        
+        const option = document.createElement('div');
+        option.className = 'multiselect-option';
+        option.innerHTML = `
+            <label>
+                <input type="checkbox" value="${month}" 
+                       ${searchState.selectedMonths.has(month) ? 'checked' : ''} 
+                       onchange="toggleSearchMonth('${month}')">
+                <span>${monthName}</span>
+            </label>
+        `;
+        // Make entire option clickable
+        option.onclick = function(e) {
+            e.stopPropagation();
+            if (e.target.tagName !== 'INPUT') {
+                toggleSearchMonth(month);
+            }
+        };
+        container.appendChild(option);
+    });
+    
+    // Update button text
+    const btnText = document.getElementById('searchMonthBtnText');
+    if (btnText && searchState.selectedMonths.size > 0) {
+        const monthNames = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
+        const selectedMonthArray = Array.from(searchState.selectedMonths)
+            .sort((a, b) => parseInt(a) - parseInt(b))
+            .map(m => monthNames[parseInt(m) - 1]);
+        btnText.textContent = selectedMonthArray.join(', ');
+    } else if (btnText) {
+        btnText.textContent = 'Chọn tháng';
+    }
+}
+
+function toggleSearchMonthDropdown() {
+    const dropdown = document.getElementById('searchMonthDropdown');
+    if (dropdown) {
+        const isShown = dropdown.classList.contains('show');
+        
+        // Close all other dropdowns first
+        document.querySelectorAll('.multiselect-dropdown').forEach(d => {
+            if (d !== dropdown) {
+                d.classList.remove('show');
+                d.style.display = 'none';
+            }
+        });
+        
+        if (isShown) {
+            dropdown.classList.remove('show');
+            dropdown.style.display = 'none';
+        } else {
+            dropdown.classList.add('show');
+            dropdown.style.display = 'block';
+        }
+    }
+}
+
+function toggleSearchMonth(month) {
+    if (searchState.selectedMonths.has(month)) {
+        searchState.selectedMonths.delete(month);
+    } else {
+        searchState.selectedMonths.add(month);
+    }
+    updateSearchMonthCount();
+    renderSearchMonthOptions();
+}
+
+function updateSearchMonthCount() {
+    const countEl = document.getElementById('searchMonthCount');
+    if (countEl) {
+        countEl.textContent = searchState.selectedMonths.size;
+    }
+}
+
+function selectAllSearchMonths() {
+    searchState.allMonthOptions.forEach(month => {
+        searchState.selectedMonths.add(month);
+    });
+    updateSearchMonthCount();
+    renderSearchMonthOptions();
+}
+
+function clearAllSearchMonths() {
+    searchState.selectedMonths.clear();
+    updateSearchMonthCount();
+    renderSearchMonthOptions();
+}
+
+async function searchCustomer() {
+    const customerName = document.getElementById('customerSearch').value.trim();
+    
+    if (!customerName) {
+        alert('Vui lòng nhập tên khách hàng');
+        return;
+    }
+    
+    if (searchState.selectedMonths.size === 0) {
+        alert('Vui lòng chọn ít nhất một tháng');
+        return;
+    }
+    
+    console.log('🔍 Searching for customer:', customerName);
+    console.log('🔍 Selected months:', [...searchState.selectedMonths]);
+    
+    searchState.currentPage = 1;
+    searchState.customerName = customerName;
+    
+    // Load data from API
+    const months = Array.from(searchState.selectedMonths);
+    await loadCustomerSearchData(customerName, months);
+}
+
+async function loadCustomerSearchData(customerName, months) {
+    try {
+        console.log('📅 Loading data for months:', months);
+        console.log('🔍 Searching for customer:', customerName);
+        
+        const allData = [];
+        let allHeaders = null;
+        
+        // Load data from all selected months
+        for (const month of months) {
+            console.log(`📅 Loading data for month: ${month}`);
+            
+            const response = await window.admin.callAPI('getBanHang', {
+                month: month,
+                page: 1,
+                pageSize: 999999
+            });
+            
+            console.log(`📅 Response for month ${month}:`, response);
+            
+            if (response && response.success && response.data && response.data.rows) {
+                console.log(`✅ Month ${month} loaded ${response.data.rows.length} rows`);
+                
+                // Add month indicator to each row (same as Bán Hàng)
+                response.data.rows.forEach(row => {
+                    allData.push([month, ...row]); // Prepend month to row
+                });
+                
+                if (!allHeaders && response.data.headers) {
+                    allHeaders = response.data.headers;
+                    console.log('📋 Headers:', allHeaders);
+                }
+            } else {
+                console.warn(`⚠️ No data for month ${month}:`, response);
+            }
+        }
+        
+        console.log(`📊 Total rows loaded: ${allData.length}`);
+        
+        // Debug: Log first item to check structure
+        if (allData.length > 0) {
+            console.log('🔍 First item structure:', allData[0]);
+            console.log('🔍 First item length:', allData[0].length);
+            console.log('🔍 First item all indexes:', allData[0].map((val, idx) => `${idx}: ${val}`));
+        }
+        
+        // Filter by customer name AFTER prepending month
+        // item structure from getBanHang: [STT, NGÀY BÁN, DÒNG MÁY, DUNG LƯỢNG, MÀU SẮC, IMEI, IMEI V5, GIÁ BÁN, KHÁCH HÀNG, empty, empty, GIÁ NHẬP, LỢI NHUẬN, NGÀY NHẬP, NHÀ CUNG CẤP, MÔ TẢ NHẬP, ...]
+        // After prepending month, structure becomes: [month, STT, NGÀY BÁN, DÒNG MÁY, DUNG LƯỢNG, MÀU SẮC, IMEI, IMEI V5, GIÁ BÁN, KHÁCH HÀNG, ...]
+        // So KHÁCH HÀNG is at index 9 (not 10!)
+        const filteredData = allData.filter(item => {
+            if (Array.isArray(item) && item.length > 9) {
+                let khachHang = String(item[9] || '').toLowerCase();
+                let searchTerm = customerName.toLowerCase();
+                
+                // Remove Vietnamese diacritics for comparison
+                function removeAccents(str) {
+                    return str.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+                }
+                
+                khachHang = removeAccents(khachHang);
+                searchTerm = removeAccents(searchTerm);
+                
+                const matches = khachHang.includes(searchTerm);
+                console.log('🔍 Checking item index 9:', String(item[9] || ''), 'normalized:', khachHang, 'search:', searchTerm, '→', matches);
+                return matches;
+            }
+            return false;
+        });
+        
+        console.log(`🔍 Filtered results: ${filteredData.length} rows`);
+        
+        // Create data structure
+        const searchData = {
+            headers: allHeaders,
+            rows: filteredData,
+            totalRows: filteredData.length
+        };
+        
+        searchState.searchData = searchData;
+        
+        // Show total records
+        const totalRecordsInfo = document.getElementById('customerTotalRecordsInfo');
+        const totalRecordsCount = document.getElementById('customerTotalRecordsCount');
+        if (totalRecordsInfo && totalRecordsCount) {
+            totalRecordsInfo.style.display = 'block';
+            totalRecordsCount.textContent = filteredData.length;
+        }
+        
+        // Render table
+        window.admin.renderCustomerSearchTable(searchData);
+        window.admin.updateCustomerSearchPagination(searchData);
+        
+        console.log('✅ Customer search completed:', filteredData.length, 'results');
+        
+    } catch (error) {
+        console.error('❌ Error loading customer search data:', error);
+        window.admin.showError('Lỗi khi tải dữ liệu tìm kiếm');
+    }
+}
+
+// Add methods to QLBHAdmin class
+QLBHAdmin.prototype.renderCustomerSearchTable = function(data) {
+    const tbody = document.getElementById('customerSearchTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (!data.rows || data.rows.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="14" class="text-center">Không tìm thấy dữ liệu</td>';
+        tbody.appendChild(row);
+        return;
+    }
+
+    // Calculate pagination
+    const startIndex = (searchState.currentPage - 1) * searchState.pageSize;
+    const endIndex = startIndex + searchState.pageSize;
+    const pageData = data.rows.slice(startIndex, endIndex);
+    
+    pageData.forEach((item, index) => {
+        const row = document.createElement('tr');
+        // item structure: [month, STT, NGÀY BÁN, DÒNG MÁY, DUNG LƯỢNG, MÀU SẮC, IMEI, IMEI V5, ...]
+        row.innerHTML = `
+            <td>${startIndex + index + 1}</td>
+            <td>${this.formatDate(item[2])}</td>  <!-- NGÀY BÁN -->
+            <td>${item[3] || ''}</td>  <!-- DÒNG MÁY -->
+            <td>${item[4] || ''}</td>  <!-- DUNG LƯỢNG -->
+            <td>${item[5] || ''}</td>  <!-- MÀU SẮC -->
+            <td>${item[6] || ''}</td>  <!-- IMEI -->
+            <td>${item[7] || ''}</td>  <!-- IMEI V5 -->
+            <td>${this.formatCurrency(item[8] || 0)}</td>  <!-- GIÁ BÁN -->
+            <td>${item[9] || ''}</td>  <!-- KHÁCH HÀNG -->
+            <td>${this.formatCurrency(item[12] || 0)}</td>  <!-- LỢI NHUẬN -->
+            <td>${this.formatCurrency(item[13] || 0)}</td>  <!-- GIÁ NHẬP -->
+            <td>${item[14] instanceof Date ? this.formatDate(item[14]) : (item[14] ? this.formatDate(new Date(item[14])) : '')}</td>  <!-- NGÀY NHẬP -->
+            <td>${item[15] || ''}</td>  <!-- NHÀ CUNG CẤP -->
+            <td>${item[16] || ''}</td>  <!-- MÔ TẢ NHẬP -->
+        `;
+        tbody.appendChild(row);
+    });
+};
+
+QLBHAdmin.prototype.updateCustomerSearchPagination = function(data) {
+    const totalPages = Math.ceil(data.rows.length / searchState.pageSize) || 1;
+    const pageInfoEl = document.getElementById('customerPageInfo');
+    if (pageInfoEl) {
+        pageInfoEl.textContent = `Trang ${searchState.currentPage} / ${totalPages} (${data.rows.length} bản ghi)`;
+    }
+    
+    const prevBtn = document.getElementById('prevCustomerBtn');
+    const nextBtn = document.getElementById('nextCustomerBtn');
+    
+    if (prevBtn && nextBtn) {
+        prevBtn.disabled = searchState.currentPage <= 1;
+        nextBtn.disabled = searchState.currentPage >= totalPages;
+    }
+};
+
+function prevCustomerPage() {
+    if (searchState.currentPage > 1 && searchState.searchData) {
+        searchState.currentPage--;
+        window.admin.renderCustomerSearchTable(searchState.searchData);
+        window.admin.updateCustomerSearchPagination(searchState.searchData);
+    }
+}
+
+function nextCustomerPage() {
+    if (searchState.searchData) {
+        const totalPages = Math.ceil(searchState.searchData.rows.length / searchState.pageSize);
+        if (searchState.currentPage < totalPages) {
+            searchState.currentPage++;
+            window.admin.renderCustomerSearchTable(searchState.searchData);
+            window.admin.updateCustomerSearchPagination(searchState.searchData);
+        }
+    }
+}
+
+function changeCustomerPageSize() {
+    const selectEl = document.getElementById('customerPageSize');
+    if (selectEl && searchState.searchData) {
+        searchState.pageSize = parseInt(selectEl.value);
+        searchState.currentPage = 1;
+        window.admin.renderCustomerSearchTable(searchState.searchData);
+        window.admin.updateCustomerSearchPagination(searchState.searchData);
+    }
+}
+
 // Initialize the app when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     window.admin = new QLBHAdmin();
     initMobileFilters();
-    console.log('QLBH Admin App initialized with mobile filters');
+    initBanHangFilters();
+    initBanHangEventListeners();
+    initSearchFilters();
 });
+
+function initBanHangEventListeners() {
+    // Khách Hàng input listener
+    const khachHangInput = document.getElementById('banhangKhachHangSearch');
+    if (khachHangInput) {
+        khachHangInput.addEventListener('input', debounce((e) => {
+            banHangFilterState.khachHang = e.target.value.trim();
+            applyBanHangFilters();
+        }, 300));
+    }
+    
+    // IMEI V5 input listener
+    const imeiV5Input = document.getElementById('banhangImeiV5Search');
+    if (imeiV5Input) {
+        imeiV5Input.addEventListener('input', debounce((e) => {
+            let v5 = e.target.value.trim();
+            banHangFilterState.imeiV5 = v5;
+            
+            if (v5.length === 5) {
+                applyBanHangFilters();
+            } else if (v5.length === 0) {
+                applyBanHangFilters();
+            }
+        }, 300));
+    }
+    
+    // Setup dropdown toggle
+    const dongMayBtn = document.getElementById('banhangDongMayBtn');
+    const dongMayDropdown = document.getElementById('banhangDongMayDropdown');
+    if (dongMayBtn && dongMayDropdown) {
+        dongMayBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = dongMayDropdown.style.display === 'none' || !dongMayDropdown.classList.contains('show');
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('.multiselect-dropdown').forEach(dropdown => {
+                if (dropdown !== dongMayDropdown) {
+                    dropdown.classList.remove('show');
+                    dropdown.style.display = 'none';
+                }
+            });
+            
+            if (isHidden) {
+                dongMayDropdown.classList.add('show');
+                dongMayDropdown.style.display = 'block';
+            } else {
+                dongMayDropdown.classList.remove('show');
+                dongMayDropdown.style.display = 'none';
+            }
+        });
+    }
+    
+    const dungLuongBtn = document.getElementById('banhangDungLuongBtn');
+    const dungLuongDropdown = document.getElementById('banhangDungLuongDropdown');
+    if (dungLuongBtn && dungLuongDropdown) {
+        dungLuongBtn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const isHidden = dungLuongDropdown.style.display === 'none' || !dungLuongDropdown.classList.contains('show');
+            
+            // Close all other dropdowns first
+            document.querySelectorAll('.multiselect-dropdown').forEach(dropdown => {
+                if (dropdown !== dungLuongDropdown) {
+                    dropdown.classList.remove('show');
+                    dropdown.style.display = 'none';
+                }
+            });
+            
+            if (isHidden) {
+                dungLuongDropdown.classList.add('show');
+                dungLuongDropdown.style.display = 'block';
+            } else {
+                dungLuongDropdown.classList.remove('show');
+                dungLuongDropdown.style.display = 'none';
+            }
+        });
+    }
+    
+    // Search functionality for Dòng Máy
+    const dongMaySearch = document.getElementById('banhangDongMaySearch');
+    if (dongMaySearch) {
+        dongMaySearch.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const options = document.querySelectorAll('#banhangDongMayOptions .multiselect-option');
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                option.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+    }
+    
+    // Search functionality for Dung Lượng
+    const dungLuongSearch = document.getElementById('banhangDungLuongSearch');
+    if (dungLuongSearch) {
+        dungLuongSearch.addEventListener('input', (e) => {
+            const searchTerm = e.target.value.toLowerCase();
+            const options = document.querySelectorAll('#banhangDungLuongOptions .multiselect-option');
+            options.forEach(option => {
+                const text = option.textContent.toLowerCase();
+                option.style.display = text.includes(searchTerm) ? 'block' : 'none';
+            });
+        });
+    }
+}
