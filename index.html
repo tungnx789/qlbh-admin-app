@@ -38,8 +38,8 @@
             <button class="nav-item" data-module="xuathuy">
                 <i class="fas fa-trash"></i> Xuất Hủy
             </button>
-            <button class="nav-item" data-module="imei">
-                <i class="fas fa-search"></i> Tìm IMEI
+            <button class="nav-item" data-module="search">
+                <i class="fas fa-search"></i> Tìm Kiếm
             </button>
             <button class="nav-item" data-module="baocao">
                 <i class="fas fa-chart-bar"></i> Báo Cáo
@@ -220,6 +220,11 @@
                 <span id="filterSummaryText"></span>
             </div>
 
+            <!-- Total Records Info -->
+            <div class="total-records-info" id="tonkhoTotalRecordsInfo">
+                <small>Tổng số bản ghi: <span id="tonkhoTotalRecordsCount">0</span></small>
+            </div>
+
             <!-- Data Table -->
             <div class="table-responsive">
                 <table id="tonkhoTable" class="data-table">
@@ -372,6 +377,11 @@
                 <span id="nhapFilterSummaryText"></span>
             </div>
 
+            <!-- Total Records Info -->
+            <div class="total-records-info" id="nhaphangTotalRecordsInfo">
+                <small>Tổng số bản ghi: <span id="nhaphangTotalRecordsCount">0</span></small>
+            </div>
+
             <!-- Data Table -->
             <div class="table-responsive">
                 <table id="nhaphangTable" class="data-table">
@@ -424,47 +434,140 @@
         <!-- BanHang Module -->
         <div id="banhang" class="module">
             <div class="module-header">
-                <h2><i class="fas fa-shopping-cart"></i> Bán Hàng Theo Tháng</h2>
-                <div class="month-selector">
-                    <select id="monthSelector" onchange="loadBanHangMonth()" class="filter-select">
-                        <option value="01">Tháng 1</option>
-                        <option value="02">Tháng 2</option>
-                        <option value="03">Tháng 3</option>
-                        <option value="04">Tháng 4</option>
-                        <option value="05">Tháng 5</option>
-                        <option value="06">Tháng 6</option>
-                        <option value="07">Tháng 7</option>
-                        <option value="08">Tháng 8</option>
-                        <option value="09">Tháng 9</option>
-                        <option value="10">Tháng 10</option>
-                        <option value="11">Tháng 11</option>
-                        <option value="12">Tháng 12</option>
-                    </select>
-                    <button class="btn btn-primary" onclick="addBanHang()">
-                        <i class="fas fa-plus"></i> Thêm Bán
-                    </button>
+                <div class="module-title-group">
+                    <h2><i class="fas fa-shopping-cart"></i> Bán Hàng</h2>
+                    <div class="month-selector-inline">
+                        <label>Tháng:</label>
+                        <div class="mobile-multiselect large-selector">
+                            <button class="multiselect-btn" onclick="toggleBanHangMonthDropdown()">
+                                <span id="banhangMonthBtnText">Chọn tháng</span>
+                                <span class="count" id="banhangMonthCount">0</span>
+                                <i class="fas fa-chevron-down"></i>
+                            </button>
+                    <div class="multiselect-dropdown" id="banhangMonthDropdown">
+                        <div class="multiselect-actions">
+                            <button onclick="selectAllBanHangMonths()">Chọn tất cả</button>
+                            <button onclick="clearAllBanHangMonths()">Bỏ chọn</button>
+                        </div>
+                        <div class="multiselect-options" id="banhangMonthOptions">
+                            <!-- Options will be rendered here -->
+                        </div>
+                    </div>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="loadBanHangData()">
+                            <i class="fas fa-download"></i> Tải Dữ Liệu
+                        </button>
+                        <span class="last-update" id="banhangLastUpdate"></span>
+                    </div>
                 </div>
             </div>
 
-            <!-- Month Summary -->
-            <div class="month-summary">
-                <div class="summary-card">
-                    <h4><i class="fas fa-chart-bar"></i> Thống Kê Tháng</h4>
-                    <div class="stats">
-                        <div class="stat">
-                            <span class="label">Tổng Bán:</span>
-                            <span class="value" id="totalSales">0</span>
+            <!-- Mobile-Optimized Filters -->
+            <div class="filters-mobile">
+                <!-- Khách Hàng Filter -->
+                <div class="filter-card">
+                    <div class="filter-input-group">
+                        <input 
+                            type="text" 
+                            id="banhangKhachHangSearch" 
+                            placeholder="🔍 Nhập khách hàng..."
+                            class="filter-input-number"
+                        >
+                    </div>
+                </div>
+
+                <!-- IMEI V5 Filter -->
+                <div class="filter-card">
+                    <div class="filter-input-group">
+                        <input 
+                            type="text" 
+                            id="banhangImeiV5Search" 
+                            placeholder="🔍 Nhập 5 số cuối IMEI"
+                            maxlength="5"
+                            pattern="[0-9]*"
+                            inputmode="numeric"
+                            class="filter-input-number"
+                        >
+                        <span class="filter-count" id="banhangImeiV5Count"></span>
+                    </div>
+                </div>
+
+                <!-- Dòng Máy Mobile Multi-Select -->
+                <div class="mobile-multiselect">
+                    <button class="multiselect-btn" id="banhangDongMayBtn" type="button">
+                        <i class="fas fa-mobile-alt"></i>
+                        <span>Dòng Máy</span>
+                        <span class="count" id="banhangDongMayCount">Tất cả</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="banhangDongMayDropdown" style="display:none">
+                        <div class="multiselect-search">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Tìm dòng máy..." 
+                                id="banhangDongMaySearch"
+                                class="multiselect-search-input"
+                            >
                         </div>
-                        <div class="stat">
-                            <span class="label">Doanh Thu:</span>
-                            <span class="value" id="totalRevenue">0</span>
+                        <div class="multiselect-options" id="banhangDongMayOptions">
+                            <!-- Dynamic options sẽ được populate -->
                         </div>
-                        <div class="stat">
-                            <span class="label">Lợi Nhuận:</span>
-                            <span class="value" id="totalProfit">0</span>
+                        <div class="multiselect-actions">
+                            <button class="btn-select-all" onclick="selectAllBanHangDongMay()">
+                                Chọn tất cả
+                            </button>
+                            <button class="btn-clear-all" onclick="clearAllBanHangDongMay()">
+                                Bỏ chọn
+                            </button>
                         </div>
                     </div>
                 </div>
+
+                <!-- Dung Lượng Mobile Multi-Select -->
+                <div class="mobile-multiselect">
+                    <button class="multiselect-btn" id="banhangDungLuongBtn" type="button">
+                        <i class="fas fa-database"></i>
+                        <span>Dung Lượng</span>
+                        <span class="count" id="banhangDungLuongCount">Tất cả</span>
+                        <i class="fas fa-chevron-down"></i>
+                    </button>
+                    <div class="multiselect-dropdown" id="banhangDungLuongDropdown" style="display:none">
+                        <div class="multiselect-search">
+                            <input 
+                                type="text" 
+                                placeholder="🔍 Tìm dung lượng..." 
+                                id="banhangDungLuongSearch"
+                                class="multiselect-search-input"
+                            >
+                        </div>
+                        <div class="multiselect-options" id="banhangDungLuongOptions">
+                            <!-- Dynamic options sẽ được populate -->
+                        </div>
+                        <div class="multiselect-actions">
+                            <button class="btn-select-all" onclick="selectAllBanHangDungLuong()">
+                                Chọn tất cả
+                            </button>
+                            <button class="btn-clear-all" onclick="clearAllBanHangDungLuong()">
+                                Bỏ chọn
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Clear All Filters Button -->
+                <button class="btn btn-danger btn-clear-filters" onclick="clearAllBanHangFilters()" style="display: none;">
+                    <i class="fas fa-times-circle"></i> Xóa tất cả bộ lọc
+                </button>
+            </div>
+
+            <!-- Filter Summary -->
+            <div class="filter-summary" id="banhangFilterSummary" style="display:none">
+                <span id="banhangFilterSummaryText"></span>
+            </div>
+
+            <!-- Total Records Info -->
+            <div class="total-records-info" id="banhangTotalRecordsInfo">
+                <small>Tổng số bản ghi: <span id="banhangTotalRecordsCount">0</span></small>
             </div>
 
             <!-- Data Table -->
@@ -474,17 +577,18 @@
                         <tr>
                             <th>STT</th>
                             <th>Ngày Bán</th>
-                            <th>IMEI</th>
-                            <th>IMEI V5</th>
                             <th>Dòng Máy</th>
                             <th>Dung Lượng</th>
                             <th>Màu Sắc</th>
+                            <th>IMEI</th>
+                            <th>IMEI V5</th>
                             <th>Giá Bán</th>
-                            <th>Giá Nhập</th>
-                            <th>Lợi Nhuận</th>
                             <th>Khách Hàng</th>
-                            <th>Mô Tả Bán</th>
-                            <th>Actions</th>
+                            <th>Lợi Nhuận</th>
+                            <th>Giá Nhập</th>
+                            <th>Ngày Nhập</th>
+                            <th>Nhà Cung Cấp</th>
+                            <th>Mô Tả Nhập</th>
                         </tr>
                     </thead>
                     <tbody id="banhangTableBody">
@@ -495,13 +599,26 @@
 
             <!-- Pagination -->
             <div class="pagination">
-                <button class="btn btn-secondary" onclick="prevBanHangPage()" id="prevBanHangBtn">
-                    <i class="fas fa-chevron-left"></i> Trước
-                </button>
-                <span id="banhangPageInfo">Trang 1 / 1</span>
-                <button class="btn btn-secondary" onclick="nextBanHangPage()" id="nextBanHangBtn">
-                    Sau <i class="fas fa-chevron-right"></i>
-                </button>
+                <div class="pagination-controls">
+                    <div class="page-size-selector">
+                        <label for="banhangPageSize">Hiển thị:</label>
+                        <select id="banhangPageSize" onchange="changeBanHangPageSize()" class="form-control">
+                            <option value="10">10 bản ghi</option>
+                            <option value="20">20 bản ghi</option>
+                            <option value="50" selected>50 bản ghi</option>
+                            <option value="100">100 bản ghi</option>
+                        </select>
+                    </div>
+                    <div class="page-navigation">
+                        <button class="btn btn-secondary" onclick="prevBanHangPage()" id="prevBanHangBtn">
+                            <i class="fas fa-chevron-left"></i> Trước
+                        </button>
+                        <span id="banhangPageInfo">Trang 1 / 1</span>
+                        <button class="btn btn-secondary" onclick="nextBanHangPage()" id="nextBanHangBtn">
+                            Sau <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -557,25 +674,105 @@
             </div>
         </div>
 
-        <!-- IMEI Search Module -->
-        <div id="imei" class="module">
+        <!-- Search Module -->
+        <div id="search" class="module">
+            <!-- Module Header -->
             <div class="module-header">
-                <h2><i class="fas fa-search"></i> Tìm Lịch Sử IMEI</h2>
+                <h2><i class="fas fa-user-friends"></i> Tìm Kiếm Khách Hàng</h2>
             </div>
 
-            <div class="search-form">
-                <div class="search-input-group">
-                    <input type="text" id="imeiSearch" placeholder="Nhập IMEI (có thể nhiều IMEI cách nhau bằng dấu phẩy)" class="search-input">
-                    <button class="btn btn-primary" onclick="searchIMEI()">
-                        <i class="fas fa-search"></i> Tìm Kiếm
-                    </button>
+            <!-- Tìm Theo Khách Hàng Section -->
+            <div class="search-section">
+                <div class="search-form">
+                    <div class="search-controls-group">
+                        <div class="search-filter-item">
+                            <div class="filter-input-group">
+                                <input 
+                                    type="text" 
+                                    id="customerSearch" 
+                                    placeholder="🔍 Nhập khách hàng..."
+                                    class="filter-input-number"
+                                >
+                            </div>
+                        </div>
+                        <div class="search-filter-item">
+                            <div class="mobile-multiselect large-selector">
+                                <button class="multiselect-btn" onclick="toggleSearchMonthDropdown()">
+                                    <span id="searchMonthBtnText">Chọn tháng</span>
+                                    <span class="count" id="searchMonthCount">0</span>
+                                    <i class="fas fa-chevron-down"></i>
+                                </button>
+                                <div class="multiselect-dropdown" id="searchMonthDropdown">
+                                    <div class="multiselect-actions">
+                                        <button onclick="selectAllSearchMonths()">Chọn tất cả</button>
+                                        <button onclick="clearAllSearchMonths()">Bỏ chọn</button>
+                                    </div>
+                                    <div class="multiselect-options" id="searchMonthOptions">
+                                        <!-- Options sẽ được render bằng JS -->
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-search-customer" onclick="searchCustomer()">
+                            <i class="fas fa-search"></i> Tìm Khách Hàng
+                        </button>
+                    </div>
                 </div>
-            </div>
 
-            <div class="search-results" id="imeiResults" style="display:none">
-                <h3><i class="fas fa-history"></i> Lịch Sử Giao Dịch</h3>
-                <div class="imei-timeline" id="imeiTimeline">
-                    <!-- Timeline sẽ được render từ API -->
+                <!-- Total Records Info -->
+                <div class="total-records-info" id="customerTotalRecordsInfo" style="display:none">
+                    <small>Tổng số bản ghi: <span id="customerTotalRecordsCount">0</span></small>
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-responsive">
+                    <table id="customerSearchTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>Ngày Bán</th>
+                                <th>Dòng Máy</th>
+                                <th>Dung Lượng</th>
+                                <th>Màu Sắc</th>
+                                <th>IMEI</th>
+                                <th>IMEI V5</th>
+                                <th>Giá Bán</th>
+                                <th>Khách Hàng</th>
+                                <th>Lợi Nhuận</th>
+                                <th>Giá Nhập</th>
+                                <th>Ngày Nhập</th>
+                                <th>Nhà Cung Cấp</th>
+                                <th>Mô Tả Nhập</th>
+                            </tr>
+                        </thead>
+                        <tbody id="customerSearchTableBody">
+                            <!-- Data sẽ được render bằng JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <div class="pagination-controls">
+                        <div class="page-size-selector">
+                            <label for="customerPageSize">Hiển thị:</label>
+                            <select id="customerPageSize" onchange="changeCustomerPageSize()" class="form-control">
+                                <option value="10">10 bản ghi</option>
+                                <option value="20">20 bản ghi</option>
+                                <option value="50" selected>50 bản ghi</option>
+                                <option value="100">100 bản ghi</option>
+                            </select>
+                        </div>
+                        <div class="page-navigation">
+                            <button class="btn btn-secondary" onclick="prevCustomerPage()" id="prevCustomerBtn">
+                                <i class="fas fa-chevron-left"></i> Trước
+                            </button>
+                            <span id="customerPageInfo">Trang 1 / 1</span>
+                            <button class="btn btn-secondary" onclick="nextCustomerPage()" id="nextCustomerBtn">
+                                Sau <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
