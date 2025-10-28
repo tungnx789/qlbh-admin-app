@@ -831,6 +831,7 @@ body {
     
     .nav {
         top: 50px;
+        position: relative;
     }
     
     .nav-content {
@@ -839,6 +840,13 @@ body {
         flex-direction: column;
         background: white;
         box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        z-index: 1000;
+        width: 100%;
+        max-width: 100%;
     }
     
     .nav-content.show {
