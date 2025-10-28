@@ -297,6 +297,17 @@ class QLBHAdmin {
         document.getElementById('totalRevenue').textContent = this.formatCurrency(data.totalRevenue || 0);
         document.getElementById('totalProfit').textContent = this.formatCurrency(data.totalProfit || 0);
         document.getElementById('totalBan').textContent = data.totalBan || 0;
+        
+        // Update month titles with current month
+        const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
+        const revenueTitle = document.getElementById('revenueMonthTitle');
+        const profitTitle = document.getElementById('profitMonthTitle');
+        if (revenueTitle) {
+            revenueTitle.textContent = `Doanh Thu Tháng ${currentMonth}`;
+        }
+        if (profitTitle) {
+            profitTitle.textContent = `Lợi Nhuận Tháng ${currentMonth}`;
+        }
     }
 
     setupCharts() {
@@ -3644,13 +3655,32 @@ function changeImeiPageSize() {
     }
 }
 
-// Initialize the app when DOM is ready
+// Mobile menu toggle function
+function toggleMobileNav() {
+    const navContent = document.getElementById('navContent');
+    if (navContent) {
+        navContent.classList.toggle('show');
+    }
+}
+
+// Close mobile menu when clicking on nav item
 document.addEventListener('DOMContentLoaded', function() {
     window.admin = new QLBHAdmin();
     initMobileFilters();
     initBanHangFilters();
     initBanHangEventListeners();
     initSearchFilters();
+    
+    // Close mobile menu when clicking on nav items
+    const navItems = document.querySelectorAll('.nav-item');
+    navItems.forEach(item => {
+        item.addEventListener('click', () => {
+            const navContent = document.getElementById('navContent');
+            if (navContent && window.innerWidth <= 768) {
+                navContent.classList.remove('show');
+            }
+        });
+    });
 });
 
 function initBanHangEventListeners() {
