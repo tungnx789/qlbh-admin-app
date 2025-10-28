@@ -3467,6 +3467,183 @@ function changeCustomerPageSize() {
     }
 }
 
+// ============================================
+// IMEI Search
+// ============================================
+
+let imeiSearchState = {
+    imei: '',
+    searchData: null,
+    currentPage: 1,
+    pageSize: 50
+};
+
+async function searchIMEI() {
+    const imeiInput = document.getElementById('imeiSearchInput').value.trim();
+    
+    if (!imeiInput) {
+        alert('Vui lòng nhập IMEI');
+        return;
+    }
+    
+    console.log('🔍 Searching IMEI:', imeiInput);
+    
+    imeiSearchState.currentPage = 1;
+    imeiSearchState.imei = imeiInput;
+    
+    try {
+        const response = await window.admin.callAPI('searchIMEI', { imei: imeiInput });
+        
+        if (response && response.success && response.data && response.data.history) {
+            const history = response.data.history;
+            console.log('✅ IMEI history loaded:', history.length, 'records');
+            
+            // Convert history to table data
+            console.log('🔍 First item in history:', history[0]);
+            console.log('🔍 All item keys:', Object.keys(history[0] || {}));
+            
+            const tableData = {
+                headers: [],
+                rows: history.map((item, index) => {
+                    // Format date to dd-mm-yyyy (consistent with formatDate function)
+                    let dateStr = '';
+                    if (item.date) {
+                        const date = new Date(item.date);
+                        const day = String(date.getDate()).padStart(2, '0');
+                        const month = String(date.getMonth() + 1).padStart(2, '0');
+                        const year = date.getFullYear();
+                        dateStr = `${day}-${month}-${year}`;
+                    }
+                    
+                    // Get description (MÔ TẢ NHẬP) from item
+                    const moTaNhap = item.description || '';
+                    
+                    return [
+                        index + 1, // STT
+                        item.imei || '', // IMEI
+                        item.type === 'Xuất' ? 'Bán' : item.type || '', // Loại Giao Dịch (Xuất -> Bán)
+                        dateStr, // Ngày (dd/mm/yyyy)
+                        item.dongMay || '', // Dòng Máy
+                        item.dungLuong || '', // Dung Lượng
+                        item.mauSac || '', // Màu Sắc
+                        item.priceIn || '', // Giá Nhập
+                        item.supplier || '', // Nhà Cung Cấp
+                        moTaNhap, // Mô Tả Nhập
+                        item.priceOut || '', // Giá Bán
+                        item.customer || '' // Khách Hàng
+                    ];
+                }),
+                totalRows: history.length
+            };
+            
+            imeiSearchState.searchData = tableData;
+            
+            // Show total records
+            const totalRecordsInfo = document.getElementById('imeiTotalRecordsInfo');
+            const totalRecordsCount = document.getElementById('imeiTotalRecordsCount');
+            if (totalRecordsInfo && totalRecordsCount) {
+                totalRecordsInfo.style.display = 'block';
+                totalRecordsCount.textContent = history.length;
+            }
+            
+            // Render table
+            window.admin.renderImeiSearchTable(tableData);
+            window.admin.updateImeiSearchPagination(tableData);
+            
+        } else {
+            alert('Không tìm thấy lịch sử giao dịch cho IMEI này');
+            document.getElementById('imeiSearchTableBody').innerHTML = '<tr><td colspan="12" class="text-center">Không tìm thấy dữ liệu</td></tr>';
+        }
+        
+    } catch (error) {
+        console.error('❌ Error searching IMEI:', error);
+        window.admin.showError('Lỗi khi tìm kiếm IMEI');
+    }
+}
+
+QLBHAdmin.prototype.renderImeiSearchTable = function(data) {
+    const tbody = document.getElementById('imeiSearchTableBody');
+    if (!tbody) return;
+    
+    tbody.innerHTML = '';
+
+    if (!data.rows || data.rows.length === 0) {
+        const row = document.createElement('tr');
+        row.innerHTML = '<td colspan="12" class="text-center">Không tìm thấy dữ liệu</td>';
+        tbody.appendChild(row);
+        return;
+    }
+
+    // Calculate pagination
+    const startIndex = (imeiSearchState.currentPage - 1) * imeiSearchState.pageSize;
+    const endIndex = startIndex + imeiSearchState.pageSize;
+    const pageData = data.rows.slice(startIndex, endIndex);
+    
+    pageData.forEach((item, index) => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+            <td>${startIndex + index + 1}</td>
+            <td>${item[1] || ''}</td>  <!-- IMEI -->
+            <td>${item[2] || ''}</td>  <!-- Loại Giao Dịch -->
+            <td>${item[3] || ''}</td>  <!-- Ngày -->
+            <td>${item[4] || ''}</td>  <!-- Dòng Máy -->
+            <td>${item[5] || ''}</td>  <!-- Dung Lượng -->
+            <td>${item[6] || ''}</td>  <!-- Màu Sắc -->
+            <td>${item[7] ? this.formatCurrency(item[7]) : ''}</td>  <!-- Giá Nhập -->
+            <td>${item[8] || ''}</td>  <!-- Nhà Cung Cấp -->
+            <td>${item[9] || ''}</td>  <!-- Mô Tả Nhập -->
+            <td>${item[10] ? this.formatCurrency(item[10]) : ''}</td>  <!-- Giá Bán -->
+            <td>${item[11] || ''}</td>  <!-- Khách Hàng -->
+        `;
+        tbody.appendChild(row);
+    });
+};
+
+QLBHAdmin.prototype.updateImeiSearchPagination = function(data) {
+    const totalPages = Math.ceil(data.rows.length / imeiSearchState.pageSize) || 1;
+    const pageInfoEl = document.getElementById('imeiPageInfo');
+    if (pageInfoEl) {
+        pageInfoEl.textContent = `Trang ${imeiSearchState.currentPage} / ${totalPages} (${data.rows.length} bản ghi)`;
+    }
+    
+    const prevBtn = document.getElementById('prevImeiBtn');
+    const nextBtn = document.getElementById('nextImeiBtn');
+    
+    if (prevBtn && nextBtn) {
+        prevBtn.disabled = imeiSearchState.currentPage <= 1;
+        nextBtn.disabled = imeiSearchState.currentPage >= totalPages;
+    }
+};
+
+function prevImeiPage() {
+    if (imeiSearchState.currentPage > 1 && imeiSearchState.searchData) {
+        imeiSearchState.currentPage--;
+        window.admin.renderImeiSearchTable(imeiSearchState.searchData);
+        window.admin.updateImeiSearchPagination(imeiSearchState.searchData);
+    }
+}
+
+function nextImeiPage() {
+    if (imeiSearchState.searchData) {
+        const totalPages = Math.ceil(imeiSearchState.searchData.rows.length / imeiSearchState.pageSize);
+        if (imeiSearchState.currentPage < totalPages) {
+            imeiSearchState.currentPage++;
+            window.admin.renderImeiSearchTable(imeiSearchState.searchData);
+            window.admin.updateImeiSearchPagination(imeiSearchState.searchData);
+        }
+    }
+}
+
+function changeImeiPageSize() {
+    const selectEl = document.getElementById('imeiPageSize');
+    if (selectEl && imeiSearchState.searchData) {
+        imeiSearchState.pageSize = parseInt(selectEl.value);
+        imeiSearchState.currentPage = 1;
+        window.admin.renderImeiSearchTable(imeiSearchState.searchData);
+        window.admin.updateImeiSearchPagination(imeiSearchState.searchData);
+    }
+}
+
 // Initialize the app when DOM is ready
 document.addEventListener('DOMContentLoaded', function() {
     window.admin = new QLBHAdmin();
