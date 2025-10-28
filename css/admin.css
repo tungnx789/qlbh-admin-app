@@ -126,7 +126,7 @@ body {
 #search .module-header {
     padding-top: 1rem;
     padding-bottom: 0;
-    border-top: 2px solid #e1e5e9;
+    border-top: 5px solid #e1e5e9;
     border-bottom: none;
 }
 
@@ -507,6 +507,10 @@ body {
 }
 
 /* Search Form */
+.search-section {
+    margin-bottom: 3rem;
+}
+
 .search-form {
     margin-bottom: 2rem;
 }
