@@ -775,6 +775,85 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Tìm Theo IMEI Section -->
+            <div class="search-section">
+                <div class="module-header">
+                    <h2><i class="fas fa-hashtag"></i> Tìm Theo IMEI</h2>
+                </div>
+
+                <div class="search-form">
+                    <div class="search-controls-group">
+                        <div class="search-filter-item">
+                            <div class="filter-input-group">
+                                <input 
+                                    type="text" 
+                                    id="imeiSearchInput" 
+                                    placeholder="🔍 Nhập IMEI đầy đủ..."
+                                    class="filter-input-number"
+                                >
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-search-customer" onclick="searchIMEI()">
+                            <i class="fas fa-search"></i> Tìm Theo IMEI
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Total Records Info -->
+                <div class="total-records-info" id="imeiTotalRecordsInfo" style="display:none">
+                    <small>Tổng số bản ghi: <span id="imeiTotalRecordsCount">0</span></small>
+                </div>
+
+                <!-- Data Table -->
+                <div class="table-responsive">
+                    <table id="imeiSearchTable" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>STT</th>
+                                <th>IMEI</th>
+                                <th>Loại Giao Dịch</th>
+                                <th>Ngày</th>
+                                <th>Dòng Máy</th>
+                                <th>Dung Lượng</th>
+                                <th>Màu Sắc</th>
+                                <th>Giá Nhập</th>
+                                <th>Nhà Cung Cấp</th>
+                                <th>Mô Tả Nhập</th>
+                                <th>Giá Bán</th>
+                                <th>Khách Hàng</th>
+                            </tr>
+                        </thead>
+                        <tbody id="imeiSearchTableBody">
+                            <!-- Data sẽ được render bằng JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                <div class="pagination">
+                    <div class="pagination-controls">
+                        <div class="page-size-selector">
+                            <label for="imeiPageSize">Hiển thị:</label>
+                            <select id="imeiPageSize" onchange="changeImeiPageSize()" class="form-control">
+                                <option value="10">10 bản ghi</option>
+                                <option value="20">20 bản ghi</option>
+                                <option value="50" selected>50 bản ghi</option>
+                                <option value="100">100 bản ghi</option>
+                            </select>
+                        </div>
+                        <div class="page-navigation">
+                            <button class="btn btn-secondary" onclick="prevImeiPage()" id="prevImeiBtn">
+                                <i class="fas fa-chevron-left"></i> Trước
+                            </button>
+                            <span id="imeiPageInfo">Trang 1 / 1</span>
+                            <button class="btn btn-secondary" onclick="nextImeiPage()" id="nextImeiBtn">
+                                Sau <i class="fas fa-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- BaoCao Module -->
