@@ -302,11 +302,15 @@ class QLBHAdmin {
         const currentMonth = String(new Date().getMonth() + 1).padStart(2, '0');
         const revenueTitle = document.getElementById('revenueMonthTitle');
         const profitTitle = document.getElementById('profitMonthTitle');
+        const banTitle = document.getElementById('banMonthTitle');
         if (revenueTitle) {
             revenueTitle.textContent = `Doanh Thu Tháng ${currentMonth}`;
         }
         if (profitTitle) {
             profitTitle.textContent = `Lợi Nhuận Tháng ${currentMonth}`;
+        }
+        if (banTitle) {
+            banTitle.textContent = `Bán Tháng ${currentMonth}`;
         }
     }
 
