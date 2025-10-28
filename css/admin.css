@@ -345,17 +345,34 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        margin-bottom: 1rem;
-        padding: 10px;
+    }
+    
+    .days-input-group {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        padding: 4px 6px;
         background: #f8f9fa;
-        border-radius: 8px;
+        border-radius: 6px;
     }
 
-    .top-products-controls input {
-        padding: 8px 12px;
+    .days-input-group {
+        flex-shrink: 0;
+        margin-right: 8px;
+    }
+    
+    .days-input-group input {
+        min-width: 80px !important;
+        width: 80px;
+        padding: 4px 6px;
         border: 1px solid #ddd;
-        border-radius: 6px;
-        font-size: 14px;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        box-sizing: border-box;
+    }
+    
+    .days-input-group span {
+        font-size: 0.85rem;
     }
 
     .top-products-controls .btn {
@@ -1016,6 +1033,19 @@
         border-radius: 8px;
         padding: 20px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+    }
+    
+    /* Ensure tables fit within their containers */
+    .baocao-container .table-responsive {
+        overflow-x: hidden;
+        width: 100%;
+    }
+    
+    .baocao-container .data-table {
+        width: 100%;
     }
 
     .section-header {
@@ -1030,22 +1060,16 @@
     .section-header h3 {
         margin: 0;
         color: #333;
-        font-size: 1.1rem;
+        font-size: 1rem;
+        white-space: nowrap;
     }
 
     .top-products-controls {
         display: flex;
-        gap: 10px;
+        gap: 8px;
         align-items: center;
     }
-
-    .top-products-controls .filter-input {
-        width: 80px;
-        padding: 5px 8px;
-        border: 1px solid #ddd;
-        border-radius: 4px;
-        font-size: 0.9rem;
-    }
+    
 
     .loading-indicator {
         text-align: center;
@@ -1245,6 +1269,12 @@
         min-width: 800px; /* Đảm bảo bảng không bị co lại quá nhỏ */
         margin-bottom: 0;
     }
+    
+    /* Override for BaoCao tables */
+    .baocao-container .table-responsive table {
+        min-width: auto;
+        width: 100%;
+    }
 
     /* Custom scrollbar for better UX */
     .table-responsive::-webkit-scrollbar {
@@ -1307,20 +1337,78 @@
             grid-template-columns: 1fr;
         }
         
-        .baocao-container {
-            grid-template-columns: 1fr;
-            gap: 20px;
-        }
-        
-        .baocao-tonkho,
-        .baocao-topproducts {
-            min-width: 0;
-        }
+    .baocao-container {
+        grid-template-columns: 1fr;
+        gap: 20px;
     }
+    
+    .baocao-tonkho,
+    .baocao-topproducts {
+        min-width: 0;
+    }
+    
+    /* Fix BaoCao table columns on mobile */
+    .baocao-container .table-responsive {
+        overflow-x: visible;
+    }
+    
+    .baocao-container .data-table {
+        min-width: auto;
+        width: 100%;
+    }
+    
+    .baocao-container .data-table th,
+    .baocao-container .data-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.75rem;
+    }
+    
+    /* Tồn Kho table (4 columns) */
+    .baocao-tonkho .data-table th:nth-child(1),
+    .baocao-tonkho .data-table td:nth-child(1) {
+        width: 10%;
+        text-align: center;
+    }
+    
+    .baocao-tonkho .data-table th:nth-child(2),
+    .baocao-tonkho .data-table td:nth-child(2) {
+        width: 40%;
+    }
+    
+    .baocao-tonkho .data-table th:nth-child(3),
+    .baocao-tonkho .data-table td:nth-child(3) {
+        width: 25%;
+        text-align: center;
+    }
+    
+    .baocao-tonkho .data-table th:nth-child(4),
+    .baocao-tonkho .data-table td:nth-child(4) {
+        width: 25%;
+        text-align: right;
+    }
+    
+    /* TOP Products table (3 columns) */
+    .baocao-topproducts .data-table th:nth-child(1),
+    .baocao-topproducts .data-table td:nth-child(1) {
+        width: 15%;
+        text-align: center;
+    }
+    
+    .baocao-topproducts .data-table th:nth-child(2),
+    .baocao-topproducts .data-table td:nth-child(2) {
+        width: 60%;
+    }
+    
+    .baocao-topproducts .data-table th:nth-child(3),
+    .baocao-topproducts .data-table td:nth-child(3) {
+        width: 25%;
+        text-align: center;
+    }
+}
 
-    /* ============================================
-    MOBILE-OPTIMIZED FILTERS FOR TONKHO
-    ============================================ */
+/* ============================================
+   MOBILE-OPTIMIZED FILTERS FOR TONKHO
+   ============================================ */
 
     .filters-mobile {
         display: flex;
@@ -1593,6 +1681,65 @@
 
     /* Desktop Responsive */
     @media (min-width: 768px) {
+        /* Fix BaoCao tables on desktop */
+        .baocao-container .table-responsive {
+            overflow-x: visible;
+        }
+        
+        .baocao-container .data-table {
+            width: 100%;
+            table-layout: fixed;
+        }
+        
+        .baocao-container .data-table th,
+        .baocao-container .data-table td {
+            padding: 0.5rem;
+            font-size: 0.85rem;
+            word-wrap: break-word;
+        }
+        
+        /* Tồn Kho table (4 columns) - Desktop */
+        .baocao-tonkho .data-table th:nth-child(1),
+        .baocao-tonkho .data-table td:nth-child(1) {
+            width: 10%;
+            text-align: center;
+        }
+        
+        .baocao-tonkho .data-table th:nth-child(2),
+        .baocao-tonkho .data-table td:nth-child(2) {
+            width: 40%;
+        }
+        
+        .baocao-tonkho .data-table th:nth-child(3),
+        .baocao-tonkho .data-table td:nth-child(3) {
+            width: 25%;
+            text-align: center;
+        }
+        
+        .baocao-tonkho .data-table th:nth-child(4),
+        .baocao-tonkho .data-table td:nth-child(4) {
+            width: 25%;
+            text-align: right;
+        }
+        
+        /* TOP Products table (3 columns) - Desktop */
+        .baocao-topproducts .data-table th:nth-child(1),
+        .baocao-topproducts .data-table td:nth-child(1) {
+            width: 15%;
+            text-align: center;
+        }
+        
+        .baocao-topproducts .data-table th:nth-child(2),
+        .baocao-topproducts .data-table td:nth-child(2) {
+            width: 60%;
+        }
+        
+        .baocao-topproducts .data-table th:nth-child(3),
+        .baocao-topproducts .data-table td:nth-child(3) {
+            width: 25%;
+            text-align: center;
+        }
+        
         .filters-mobile {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
