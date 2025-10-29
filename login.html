@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QLBH Admin - Login</title>
+    <link rel="stylesheet" href="css/admin.css">
+    <style>
+        .login-container {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        .login-card {
+            background: white;
+            padding: 3rem;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .login-card h1 {
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+        .login-card p {
+            color: #6c757d;
+            margin-bottom: 2rem;
+        }
+        #g-signin-button {
+            margin-top: 1rem;
+        }
+        .error-message {
+            color: #dc3545;
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+    <script src="https://apis.google.com/js/platform.js" async defer></script>
+    <meta name="google-signin-client_id" content="853590433333-lhupsgnn065lf2cdmqodbnnmh6ouhh8k.apps.googleusercontent.com">
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-card">
+            <h1><i class="fas fa-lock"></i> QLBH Admin</h1>
+            <p>Vui lòng đăng nhập bằng tài khoản Google để tiếp tục</p>
+            
+            <div id="g-signin-button" class="g-signin2" data-onsuccess="onSignIn"></div>
+            
+            <div class="error-message" id="errorMessage"></div>
+        </div>
+    </div>
+
+    <script>
+        function onSignIn(googleUser) {
+            var profile = googleUser.getBasicProfile();
+            var email = profile.getEmail();
+            var idToken = googleUser.getAuthResponse().id_token;
+            
+            console.log('User email: ' + email);
+            
+            // Verify with backend
+            fetch('https://script.google.com/macros/s/AKfycbwHKQghzT89gptdUeew01jyQx1amCyIUSwtIecvWbFetRIpBIQmLINsA3HDPI33rbax/exec?action=verifyUser&email=' + encodeURIComponent(email))
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Store email in localStorage
+                        localStorage.setItem('adminEmail', email);
+                        localStorage.setItem('adminToken', idToken);
+                        
+                        // Redirect to dashboard
+                        window.location.href = 'index.html';
+                    } else {
+                        // Show error
+                        document.getElementById('errorMessage').style.display = 'block';
+                        document.getElementById('errorMessage').textContent = 'Bạn không có quyền truy cập';
+                        
+                        // Sign out
+                        var auth2 = gapi.auth2.getAuthInstance();
+                        auth2.signOut().then(function () {
+                            console.log('User signed out.');
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    document.getElementById('errorMessage').style.display = 'block';
+                    document.getElementById('errorMessage').textContent = 'Lỗi kết nối. Vui lòng thử lại.';
+                });
+        }
+    </script>
+</body>
+</html>
+
+
