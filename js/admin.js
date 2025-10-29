@@ -317,6 +317,13 @@ class QLBHAdmin {
         try {
             const url = new URL('https://script.google.com/macros/s/AKfycbwHKQghzT89gptdUeew01jyQx1amCyIUSwtIecvWbFetRIpBIQmLINsA3HDPI33rbax/exec');
             url.searchParams.append('action', action);
+            
+            // ✅ Add email for authorization check
+            const adminEmail = localStorage.getItem('adminEmail');
+            if (adminEmail) {
+                url.searchParams.append('email', adminEmail);
+            }
+            
             Object.keys(params).forEach(key => {
                 url.searchParams.append(key, params[key]);
             });
@@ -333,6 +340,11 @@ class QLBHAdmin {
             }
             
             const data = await response.json();
+            
+            // ✅ Check if response has error
+            if (data && data.error) {
+                throw new Error(data.error);
+            }
             
             this.hideLoading();
             return data;
