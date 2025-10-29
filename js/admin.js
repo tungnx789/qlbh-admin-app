@@ -321,13 +321,24 @@ class QLBHAdmin {
                 url.searchParams.append(key, params[key]);
             });
 
-            const response = await fetch(url);
+            const response = await fetch(url, {
+                method: 'GET',
+                mode: 'cors',
+                credentials: 'omit',
+                cache: 'no-cache'
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            
             const data = await response.json();
             
             this.hideLoading();
             return data;
         } catch (error) {
             this.hideLoading();
+            console.error('API Error:', error);
             this.showError('Lỗi kết nối API: ' + error.message);
             return null;
         }
