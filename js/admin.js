@@ -1,6 +1,9 @@
 // QLBH Admin App JavaScript
 class QLBHAdmin {
     constructor() {
+        // ✅ CHECK AUTHENTICATION FIRST
+        this.checkAuth();
+        
         this.currentModule = 'dashboard';
         this.currentPage = 1;
         this.pageSize = 50;  // Default 50 for Nhập Hàng (can be overridden per module)
@@ -23,6 +26,27 @@ class QLBHAdmin {
         this.DISABLE_CACHE = false;
         
         this.init();
+    }
+    
+    checkAuth() {
+        // Check if user is logged in
+        const adminEmail = localStorage.getItem('adminEmail');
+        const adminToken = localStorage.getItem('adminToken');
+        
+        // Allow access to login page without auth
+        const currentPath = window.location.pathname;
+        if (currentPath.includes('login.html')) {
+            return;
+        }
+        
+        if (!adminEmail || !adminToken) {
+            // Not logged in, redirect to login page
+            console.log('Not authenticated, redirecting to login...');
+            window.location.href = 'login.html';
+            return;
+        }
+        
+        console.log('User authenticated:', adminEmail);
     }
 
     init() {
