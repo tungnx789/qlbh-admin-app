@@ -68,10 +68,14 @@ class QLBHAdmin {
         
         console.log('User authenticated:', adminEmail);
         
-        // Update user email in header
+        // Update user email in header and dropdown
         const userEmailEl = document.getElementById('userEmail');
+        const dropdownUserEmailEl = document.getElementById('dropdownUserEmail');
         if (userEmailEl) {
             userEmailEl.textContent = adminEmail;
+        }
+        if (dropdownUserEmailEl) {
+            dropdownUserEmailEl.textContent = adminEmail;
         }
     }
     
@@ -3873,3 +3877,49 @@ function initBanHangEventListeners() {
         });
     }
 }
+
+// Toggle user dropdown menu
+function toggleUserDropdown(event) {
+    event.stopPropagation();
+    const userInfo = document.querySelector('.user-info');
+    const dropdown = document.getElementById('userDropdown');
+    
+    if (userInfo && dropdown) {
+        const isActive = userInfo.classList.contains('active');
+        
+        // Close all dropdowns first
+        document.querySelectorAll('.user-info').forEach(item => {
+            item.classList.remove('active');
+        });
+        
+        // Toggle current dropdown
+        if (!isActive) {
+            userInfo.classList.add('active');
+        }
+    }
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('click', function(event) {
+        const userInfo = document.querySelector('.user-info');
+        const dropdown = document.getElementById('userDropdown');
+        
+        if (userInfo && dropdown) {
+            // Check if click is outside the user-info element
+            if (!userInfo.contains(event.target)) {
+                userInfo.classList.remove('active');
+            }
+        }
+    });
+});
+
+// Close dropdown when clicking on logout item
+document.addEventListener('click', function(event) {
+    if (event.target.closest('.logout-item')) {
+        const userInfo = document.querySelector('.user-info');
+        if (userInfo) {
+            userInfo.classList.remove('active');
+        }
+    }
+});
