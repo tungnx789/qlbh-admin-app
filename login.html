@@ -60,9 +60,10 @@
     <div class="login-container">
         <div class="login-card">
             <h1><i class="fas fa-lock"></i> QLBH Admin</h1>
-            <p>Vui lòng nhập email để đăng nhập</p>
+            <p>Vui lòng nhập email và mật khẩu để đăng nhập</p>
             
-            <input type="email" id="emailInput" class="login-input" placeholder="Email của bạn">
+            <input type="email" id="emailInput" class="login-input" placeholder="Email của bạn" autocomplete="username">
+            <input type="password" id="passwordInput" class="login-input" placeholder="Mật khẩu" autocomplete="current-password">
             <button onclick="login()" class="login-button">Đăng Nhập</button>
             
             <div class="error-message" id="errorMessage"></div>
@@ -70,31 +71,59 @@
     </div>
 
     <script>
-        // Authorized emails (MUST match backend in CODE/QLBH/QLBH.js)
-        const AUTHORIZED_EMAILS = [
-            'tungnx789@gmail.com',
-            'tbuzz89@gmail.com'
-        ];
+        const API_URL = 'https://script.google.com/macros/s/AKfycbwHKQghzT89gptdUeew01jyQx1amCyIUSwtIecvWbFetRIpBIQmLINsA3HDPI33rbax/exec';
         
         function login() {
             const email = document.getElementById('emailInput').value.trim().toLowerCase();
+            const password = document.getElementById('passwordInput').value;
+            
+            // Hide previous errors
+            document.getElementById('errorMessage').style.display = 'none';
             
             if (!email) {
                 showError('Vui lòng nhập email');
                 return;
             }
             
-            // Check if email is authorized
-            if (AUTHORIZED_EMAILS.indexOf(email) > -1) {
-                // Store email in localStorage
-                localStorage.setItem('adminEmail', email);
-                localStorage.setItem('adminToken', 'simple-auth-' + Date.now());
-                
-                // Redirect to dashboard
-                window.location.href = 'index.html';
-            } else {
-                showError('Email không có quyền truy cập: ' + email);
+            if (!password) {
+                showError('Vui lòng nhập mật khẩu');
+                return;
             }
+            
+            // Show loading state
+            const button = document.querySelector('.login-button');
+            const originalText = button.textContent;
+            button.disabled = true;
+            button.textContent = 'Đang đăng nhập...';
+            
+            // Verify with backend
+            const url = API_URL + '?action=verifyUserWithPassword&email=' + encodeURIComponent(email) + '&password=' + encodeURIComponent(password);
+            
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.success) {
+                        // Store session in localStorage (7 days)
+                        const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
+                        localStorage.setItem('adminEmail', email);
+                        localStorage.setItem('adminToken', 'session-' + Date.now());
+                        localStorage.setItem('adminExpiresAt', expiresAt.toString());
+                        localStorage.setItem('adminLoginTime', Date.now().toString());
+                        
+                        // Redirect to dashboard
+                        window.location.href = 'index.html';
+                    } else {
+                        showError(data.message || 'Email hoặc mật khẩu không đúng');
+                        button.disabled = false;
+                        button.textContent = originalText;
+                    }
+                })
+                .catch(error => {
+                    console.error('Login error:', error);
+                    showError('Lỗi kết nối. Vui lòng thử lại.');
+                    button.disabled = false;
+                    button.textContent = originalText;
+                });
         }
         
         function showError(message) {
@@ -105,6 +134,12 @@
         
         // Allow Enter key to login
         document.getElementById('emailInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                document.getElementById('passwordInput').focus();
+            }
+        });
+        
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 login();
             }
