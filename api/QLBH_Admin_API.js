@@ -31,6 +31,9 @@ function doGet(e) {
       case 'searchIMEI':
         data = searchIMEIHistory(e.parameter);
         break;
+      case 'getTopProducts':
+        data = getTopProductsData(e.parameter);
+        break;
       default:
         data = { error: 'Action not found' };
     }
@@ -129,13 +132,16 @@ function getDashboardData() {
     var banHangSheet = ss.getSheetByName('BanHangT' + currentMonth);
     var totalBan = 0;
     var totalRevenue = 0;
+    var totalProfit = 0;
     if (banHangSheet) {
       var headerRow = findHeaderRow(banHangSheet);
       totalBan = banHangSheet.getLastRow() - headerRow;
       
-      // Calculate revenue
+      // Get headers
       var headers = banHangSheet.getRange(headerRow, 1, 1, banHangSheet.getLastColumn()).getValues()[0]
                                 .map(h => h.toString().trim().toUpperCase());
+      
+      // Calculate revenue from GIÁ BÁN column
       var giaBanIndex = headers.indexOf('GIÁ BÁN');
       if (giaBanIndex >= 0) {
         var data = banHangSheet.getRange(headerRow + 1, giaBanIndex + 1, totalBan, 1).getValues();
@@ -143,6 +149,36 @@ function getDashboardData() {
           var value = row[0];
           return sum + (typeof value === 'number' ? value : 0);
         }, 0);
+      }
+      
+      // Get total profit from header row (usually row 1, above the actual header)
+      // Look for LỢI NHUẬN in the header row area
+      var profitHeaderIndex = headers.indexOf('LỢI NHUẬN');
+      if (profitHeaderIndex >= 0) {
+        // Try to get the total from the cell above the header (row 1)
+        try {
+          var profitTotalCell = banHangSheet.getRange(1, profitHeaderIndex + 1);
+          var profitValue = profitTotalCell.getValue();
+          if (typeof profitValue === 'number') {
+            totalProfit = profitValue;
+          }
+        } catch (e) {
+          // If not found in row 1, try row 2
+          try {
+            var profitTotalCell = banHangSheet.getRange(2, profitHeaderIndex + 1);
+            var profitValue = profitTotalCell.getValue();
+            if (typeof profitValue === 'number') {
+              totalProfit = profitValue;
+            }
+          } catch (e2) {
+            // Fallback: calculate from data
+            var data = banHangSheet.getRange(headerRow + 1, profitHeaderIndex + 1, totalBan, 1).getValues();
+            totalProfit = data.reduce((sum, row) => {
+              var value = row[0];
+              return sum + (typeof value === 'number' ? value : 0);
+            }, 0);
+          }
+        }
       }
     }
     
@@ -201,6 +237,7 @@ function getDashboardData() {
       success: true,
       totalTonKho: totalTonKho,
       totalRevenue: totalRevenue,
+      totalProfit: totalProfit,
       totalNhap: totalNhap,
       totalBan: totalBan,
       revenueByMonth: revenueByMonth,
@@ -732,6 +769,91 @@ function syncDataOperation() {
   return { success: true, message: 'Sync data operation - Implementation needed' };
 }
 
+/**
+ * Get TOP SẢN PHẨM BÁN CHẠY data
+ */
+function getTopProductsData(params) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var days = parseInt(params.days) || 120;
+  
+  try {
+    // Calculate date range
+    var endDate = new Date();
+    var startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    
+    var allSales = [];
+    
+    // Get all BanHangTxx sheets
+    var sheets = ss.getSheets();
+    var banHangSheets = sheets.filter(function(sheet) {
+      return sheet.getName().startsWith('BanHangT');
+    });
+    
+    // Collect sales data from all BanHangTxx sheets
+    banHangSheets.forEach(function(sheet) {
+      var headerRow = findHeaderRow(sheet);
+      var lastRow = sheet.getLastRow();
+      
+      if (lastRow > headerRow) {
+        var headers = sheet.getRange(headerRow, 1, 1, sheet.getLastColumn()).getValues()[0]
+                          .map(h => h.toString().trim().toUpperCase());
+        
+        var ngayBanIndex = headers.indexOf('NGÀY BÁN');
+        var dongMayIndex = headers.indexOf('DÒNG MÁY');
+        var giaBanIndex = headers.indexOf('GIÁ BÁN');
+        
+        if (ngayBanIndex >= 0 && dongMayIndex >= 0 && giaBanIndex >= 0) {
+          var data = sheet.getRange(headerRow + 1, 1, lastRow - headerRow, sheet.getLastColumn()).getValues();
+          
+          data.forEach(function(row) {
+            var ngayBan = new Date(row[ngayBanIndex]);
+            var dongMay = row[dongMayIndex];
+            var giaBan = row[giaBanIndex];
+            
+            // Filter by date range
+            if (ngayBan >= startDate && ngayBan <= endDate && dongMay && giaBan) {
+              allSales.push({
+                dongMay: dongMay.toString().trim(),
+                giaBan: typeof giaBan === 'number' ? giaBan : 0
+              });
+            }
+          });
+        }
+      }
+    });
+    
+    // Group by DÒNG MÁY and calculate totals
+    var productStats = {};
+    allSales.forEach(function(sale) {
+      if (!productStats[sale.dongMay]) {
+        productStats[sale.dongMay] = {
+          dongMay: sale.dongMay,
+          soLuongBan: 0,
+          doanhThu: 0
+        };
+      }
+      productStats[sale.dongMay].soLuongBan++;
+      productStats[sale.dongMay].doanhThu += sale.giaBan;
+    });
+    
+    // Convert to array and sort by soLuongBan
+    var topProducts = Object.values(productStats)
+      .sort(function(a, b) { return b.soLuongBan - a.soLuongBan; })
+      .slice(0, 10); // Top 10
+    
+    return {
+      success: true,
+      topProducts: topProducts,
+      totalDays: days,
+      totalSales: allSales.length
+    };
+    
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+}
+
 function calculateProfitOperation() {
   return { success: true, message: 'Calculate profit operation - Implementation needed' };
 }
@@ -743,3 +865,5 @@ function compareTonKhoOperation() {
 function backupDataOperation() {
   return { success: true, message: 'Backup data operation - Implementation needed' };
 }
+
+

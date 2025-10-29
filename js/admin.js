@@ -37,6 +37,8 @@ class QLBHAdmin {
         // Allow access to login page without auth
         const currentPath = window.location.pathname;
         if (currentPath.includes('login.html')) {
+            // Show body for login page
+            document.body.classList.add('auth-verified');
             return;
         }
         
@@ -60,6 +62,9 @@ class QLBHAdmin {
             window.location.href = 'login.html';
             return;
         }
+        
+        // ✅ User is authenticated - show body
+        document.body.classList.add('auth-verified');
         
         console.log('User authenticated:', adminEmail);
         
