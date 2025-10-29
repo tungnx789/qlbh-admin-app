@@ -32,6 +32,7 @@ class QLBHAdmin {
         // Check if user is logged in
         const adminEmail = localStorage.getItem('adminEmail');
         const adminToken = localStorage.getItem('adminToken');
+        const expiresAt = parseInt(localStorage.getItem('adminExpiresAt') || '0', 10);
         
         // Allow access to login page without auth
         const currentPath = window.location.pathname;
@@ -39,6 +40,7 @@ class QLBHAdmin {
             return;
         }
         
+        // Check if session exists
         if (!adminEmail || !adminToken) {
             // Not logged in, redirect to login page
             console.log('Not authenticated, redirecting to login...');
@@ -46,7 +48,37 @@ class QLBHAdmin {
             return;
         }
         
+        // Check if session has expired (7 days)
+        const now = Date.now();
+        if (expiresAt === 0 || now > expiresAt) {
+            // Session expired, clear storage and redirect
+            console.log('Session expired, redirecting to login...');
+            localStorage.removeItem('adminEmail');
+            localStorage.removeItem('adminToken');
+            localStorage.removeItem('adminExpiresAt');
+            localStorage.removeItem('adminLoginTime');
+            window.location.href = 'login.html';
+            return;
+        }
+        
         console.log('User authenticated:', adminEmail);
+        
+        // Update user email in header
+        const userEmailEl = document.getElementById('userEmail');
+        if (userEmailEl) {
+            userEmailEl.textContent = adminEmail;
+        }
+    }
+    
+    logout() {
+        // Clear all auth data
+        localStorage.removeItem('adminEmail');
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminExpiresAt');
+        localStorage.removeItem('adminLoginTime');
+        
+        // Redirect to login
+        window.location.href = 'login.html';
     }
 
     init() {
