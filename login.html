@@ -60,23 +60,32 @@
             var email = profile.getEmail();
             var idToken = googleUser.getAuthResponse().id_token;
             
-            console.log('User email: ' + email);
+            console.log('🚀 Starting authentication for:', email);
             
             // Verify with backend
             fetch('https://script.google.com/macros/s/AKfycbwHKQghzT89gptdUeew01jyQx1amCyIUSwtIecvWbFetRIpBIQmLINsA3HDPI33rbax/exec?action=verifyUser&email=' + encodeURIComponent(email))
-                .then(response => response.json())
+                .then(response => {
+                    console.log('📡 Response status:', response.status);
+                    return response.json();
+                })
                 .then(data => {
-                    if (data.success) {
+                    console.log('📥 Response data:', data);
+                    
+                    if (data && data.success) {
+                        console.log('✅ Authentication successful!');
+                        
                         // Store email in localStorage
                         localStorage.setItem('adminEmail', email);
                         localStorage.setItem('adminToken', idToken);
                         
+                        console.log('💾 Saved to localStorage, redirecting...');
                         // Redirect to dashboard
                         window.location.href = 'index.html';
                     } else {
+                        console.error('❌ Authentication failed:', data);
                         // Show error
                         document.getElementById('errorMessage').style.display = 'block';
-                        document.getElementById('errorMessage').textContent = 'Bạn không có quyền truy cập';
+                        document.getElementById('errorMessage').textContent = 'Bạn không có quyền truy cập: ' + (data ? data.message : 'Unknown error');
                         
                         // Sign out
                         var auth2 = gapi.auth2.getAuthInstance();
@@ -86,9 +95,9 @@
                     }
                 })
                 .catch(error => {
-                    console.error('Error:', error);
+                    console.error('❌ Fetch error:', error);
                     document.getElementById('errorMessage').style.display = 'block';
-                    document.getElementById('errorMessage').textContent = 'Lỗi kết nối. Vui lòng thử lại.';
+                    document.getElementById('errorMessage').textContent = 'Lỗi kết nối: ' + error.message;
                 });
         }
     </script>
