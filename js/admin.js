@@ -419,27 +419,20 @@ class QLBHAdmin {
 
     setupCharts() {
         console.log('🎨 setupCharts - Initializing charts...');
-        // Revenue Chart - Sửa để hiển thị đúng tháng hiện tại
         const revenueCtx = document.getElementById('revenueChart');
         if (revenueCtx) {
             console.log('📊 setupCharts - Found revenueChart canvas, creating chart...');
-            // Lấy tháng hiện tại
-            const currentMonth = new Date().getMonth(); // 0-11
+            const currentMonth = new Date().getMonth();
             const monthLabels = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8', 'T9', 'T10', 'T11', 'T12'];
-            
-            // Tạo labels từ tháng hiện tại trở về trước 12 tháng
             const labels = [];
             const data = [];
-            
             for (let i = 11; i >= 0; i--) {
                 const monthIndex = (currentMonth - i + 12) % 12;
                 labels.push(monthLabels[monthIndex]);
-                data.push(0); // Sẽ được cập nhật từ API
+                data.push(0);
             }
-            
             console.log('📊 setupCharts - Labels:', labels);
             console.log('📊 setupCharts - Current month:', currentMonth);
-            
             this.revenueChart = new Chart(revenueCtx, {
                 type: 'line',
                 data: {
@@ -504,8 +497,6 @@ class QLBHAdmin {
         if (this.revenueChart && data.revenueByMonth) {
             console.log('📊 updateCharts - Updating revenue chart with data:', data.revenueByMonth);
             this.revenueChart.data.datasets[0].data = data.revenueByMonth || [];
-
-            // Update profit dataset if available
             if (data.profitByMonth) {
                 console.log('📊 updateCharts - profitByMonth:', data.profitByMonth);
                 if (!this.revenueChart.data.datasets[1]) {
@@ -520,32 +511,6 @@ class QLBHAdmin {
                 }
                 this.revenueChart.data.datasets[1].data = data.profitByMonth || [];
             }
-
-            // Đảm bảo trục y1 tồn tại (phòng khi Chart config bị ghi đè ở nơi khác)
-            if (!this.revenueChart.options.scales.y1) {
-                this.revenueChart.options.scales.y1 = {
-                    beginAtZero: true,
-                    position: 'right',
-                    grid: { drawOnChartArea: false },
-                    ticks: {
-                        callback: function(value) {
-                            return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
-                        }
-                    }
-                };
-            }
-
-            // Cấu hình trục an toàn tối giản để tránh xung đột nội bộ Chart.js
-            this.revenueChart.options.scales.y = this.revenueChart.options.scales.y || {};
-            this.revenueChart.options.scales.y1 = this.revenueChart.options.scales.y1 || {};
-
-            this.revenueChart.options.scales.y.beginAtZero = true;
-
-            this.revenueChart.options.scales.y1.beginAtZero = true;
-            // Chỉ tắt grid của trục phải để dùng chung lưới trục trái
-            this.revenueChart.options.scales.y1.grid = this.revenueChart.options.scales.y1.grid || {};
-            this.revenueChart.options.scales.y1.grid.drawOnChartArea = false;
-
             this.revenueChart.update();
             console.log('✅ updateCharts - Chart updated successfully');
         } else {
