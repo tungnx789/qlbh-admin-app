@@ -204,6 +204,7 @@ function getDashboardData() {
     
     // Revenue by month (last 12 months)
     var revenueByMonth = [];
+    var profitByMonth = [];
     for (var i = 11; i >= 0; i--) {
       var month = new Date();
       month.setMonth(month.getMonth() - i);
@@ -211,11 +212,13 @@ function getDashboardData() {
       var monthSheet = ss.getSheetByName('BanHangT' + monthStr);
       
       var monthRevenue = 0;
+      var monthProfit = 0;
       if (monthSheet) {
         var headerRow = findHeaderRow(monthSheet);
         var headers = monthSheet.getRange(headerRow, 1, 1, monthSheet.getLastColumn()).getValues()[0]
                                .map(h => h.toString().trim().toUpperCase());
         var giaBanIndex = headers.indexOf('GIÁ BÁN');
+        var loiNhuanIndex = headers.indexOf('LỢI NHUẬN');
         if (giaBanIndex >= 0) {
           var data = monthSheet.getRange(headerRow + 1, giaBanIndex + 1, monthSheet.getLastRow() - headerRow, 1).getValues();
           monthRevenue = data.reduce((sum, row) => {
@@ -223,8 +226,28 @@ function getDashboardData() {
             return sum + (typeof value === 'number' ? value : 0);
           }, 0);
         }
+        // Fallback: ưu tiên ô L1, nếu không hợp lệ thì cộng toàn cột "LỢI NHUẬN"
+        if (loiNhuanIndex >= 0) {
+          var profitCellRow = headerRow - 1;
+          var l1Valid = false;
+          if (profitCellRow >= 1) {
+            var profitCell = monthSheet.getRange(profitCellRow, loiNhuanIndex + 1, 1, 1).getValue();
+            if (typeof profitCell === 'number' && !isNaN(profitCell)) {
+              monthProfit = profitCell;
+              l1Valid = true;
+            }
+          }
+          if (!l1Valid) {
+            var pData = monthSheet.getRange(headerRow + 1, loiNhuanIndex + 1, monthSheet.getLastRow() - headerRow, 1).getValues();
+            monthProfit = pData.reduce((sum, row) => {
+              var value = row[0];
+              return sum + (typeof value === 'number' ? value : 0);
+            }, 0);
+          }
+        }
       }
       revenueByMonth.push(monthRevenue);
+      profitByMonth.push(monthProfit);
     }
     
     // Top products data
@@ -241,6 +264,7 @@ function getDashboardData() {
       totalNhap: totalNhap,
       totalBan: totalBan,
       revenueByMonth: revenueByMonth,
+      profitByMonth: profitByMonth,
       productsData: productsData
     };
     

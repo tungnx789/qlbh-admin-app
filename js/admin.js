@@ -1,4 +1,18 @@
 // QLBH Admin App JavaScript
+// Helper: chọn bước tick "đẹp" cho trục
+function niceStep(maxValue) {
+    if (!maxValue || maxValue <= 0) return 1;
+    const exp = Math.floor(Math.log10(maxValue));
+    const base = Math.pow(10, exp);
+    const m = maxValue / base;
+    let factor;
+    if (m <= 1) factor = 0.2;
+    else if (m <= 2) factor = 0.2;
+    else if (m <= 5) factor = 0.5;
+    else factor = 1;
+    const step = Math.round(base * factor);
+    return step > 0 ? step : 1;
+}
 class QLBHAdmin {
     constructor() {
         // ✅ CHECK AUTHENTICATION FIRST
@@ -362,13 +376,14 @@ class QLBHAdmin {
 
     // Dashboard Methods
     async loadDashboard() {
-        // Check cache first
+        // Check cache first (nếu thiếu profitByMonth thì vẫn fetch mới)
         const cachedData = this.getCacheData('dashboard');
         if (cachedData.data) {
+            const hasProfit = Array.isArray(cachedData.data.profitByMonth);
             this.updateDashboardStats(cachedData.data);
             this.updateCharts(cachedData.data);
             this.updateLastUpdateTime('dashboard');
-            return;
+            if (hasProfit) return;
         }
         
         const response = await this.callAPI('getDashboard');
@@ -429,24 +444,46 @@ class QLBHAdmin {
                 type: 'line',
                 data: {
                     labels: labels,
-                    datasets: [{
-                        label: 'Doanh Thu (VNĐ)',
-                        data: data,
-                        borderColor: '#667eea',
-                        backgroundColor: 'rgba(102, 126, 234, 0.1)',
-                        tension: 0.4
-                    }]
+                    datasets: [
+                        {
+                            label: 'Doanh Thu (VNĐ)',
+                            data: data,
+                            borderColor: '#667eea',
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y'
+                        },
+                        {
+                            label: 'Lợi Nhuận (VNĐ)',
+                            data: labels.map(() => 0),
+                            borderColor: '#ff9800',
+                            backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                            tension: 0.4,
+                            yAxisID: 'y1'
+                        }
+                    ]
                 },
                 options: {
                     responsive: true,
                     plugins: {
                         legend: {
-                            display: false
+                            display: true
                         }
                     },
                     scales: {
                         y: {
                             beginAtZero: true,
+                            position: 'left',
+                            ticks: {
+                                callback: function(value) {
+                                    return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+                                }
+                            }
+                        },
+                        y1: {
+                            beginAtZero: true,
+                            position: 'right',
+                            grid: { drawOnChartArea: false },
                             ticks: {
                                 callback: function(value) {
                                     return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
@@ -466,9 +503,51 @@ class QLBHAdmin {
         console.log('🔄 updateCharts - Updating charts with data:', data);
         if (this.revenueChart && data.revenueByMonth) {
             console.log('📊 updateCharts - Updating revenue chart with data:', data.revenueByMonth);
-            this.revenueChart.data.datasets[0].data = data.revenueByMonth;
+            this.revenueChart.data.datasets[0].data = data.revenueByMonth || [];
+
+            // Update profit dataset if available
+            if (data.profitByMonth) {
+                console.log('📊 updateCharts - profitByMonth:', data.profitByMonth);
+                if (!this.revenueChart.data.datasets[1]) {
+                    this.revenueChart.data.datasets[1] = {
+                        label: 'Lợi Nhuận (VNĐ)',
+                        data: [],
+                        borderColor: '#ff9800',
+                        backgroundColor: 'rgba(255, 152, 0, 0.1)',
+                        tension: 0.4,
+                        yAxisID: 'y1'
+                    };
+                }
+                this.revenueChart.data.datasets[1].data = data.profitByMonth || [];
+            }
+
+            // Đảm bảo trục y1 tồn tại (phòng khi Chart config bị ghi đè ở nơi khác)
+            if (!this.revenueChart.options.scales.y1) {
+                this.revenueChart.options.scales.y1 = {
+                    beginAtZero: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false },
+                    ticks: {
+                        callback: function(value) {
+                            return new Intl.NumberFormat('vi-VN').format(value) + 'đ';
+                        }
+                    }
+                };
+            }
+
+            // Cấu hình trục an toàn tối giản để tránh xung đột nội bộ Chart.js
+            this.revenueChart.options.scales.y = this.revenueChart.options.scales.y || {};
+            this.revenueChart.options.scales.y1 = this.revenueChart.options.scales.y1 || {};
+
+            this.revenueChart.options.scales.y.beginAtZero = true;
+
+            this.revenueChart.options.scales.y1.beginAtZero = true;
+            // Chỉ tắt grid của trục phải để dùng chung lưới trục trái
+            this.revenueChart.options.scales.y1.grid = this.revenueChart.options.scales.y1.grid || {};
+            this.revenueChart.options.scales.y1.grid.drawOnChartArea = false;
+
             this.revenueChart.update();
-            console.log('✅ updateCharts - Revenue chart updated successfully');
+            console.log('✅ updateCharts - Chart updated successfully');
         } else {
             console.log('❌ updateCharts - Chart not found or no revenueByMonth data');
         }
