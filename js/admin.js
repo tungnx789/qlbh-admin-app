@@ -287,9 +287,37 @@ class QLBHAdmin {
             case 'banhang':
                 const cachedBanHang = this.getCacheData('banhang');
                 if (cachedBanHang && cachedBanHang.data) {
-                    this.renderBanHangTableWithPagination(cachedBanHang.data);
-                    this.updateBanHangPaginationClientSide(cachedBanHang.data);
-                    this.updateLastUpdateTime('banhang');
+                    // Populate filter options trước
+                    if (typeof populateBanHangFilterOptions === 'function') {
+                        populateBanHangFilterOptions(cachedBanHang.data);
+                    }
+                    
+                    // Khôi phục filter state và apply filter
+                    let hasActiveFilters = false;
+                    if (typeof restoreFilterStateFromStorage === 'function') {
+                        if (restoreFilterStateFromStorage(banHangFilterState, 'qlbh_filter_banhang')) {
+                            if (typeof restoreFilterUIFromState === 'function') {
+                                restoreFilterUIFromState(banHangFilterState, 'banhang');
+                            }
+                            // Apply filter nếu có filter active
+                            if (banHangFilterState.khachHang || 
+                                (banHangFilterState.imeiV5 && banHangFilterState.imeiV5.length === 5) || 
+                                (banHangFilterState.selectedDongMay && banHangFilterState.selectedDongMay.size > 0) || 
+                                (banHangFilterState.selectedDungLuong && banHangFilterState.selectedDungLuong.size > 0)) {
+                                if (typeof applyBanHangFilters === 'function') {
+                                    applyBanHangFilters();
+                                    hasActiveFilters = true; // applyBanHangFilters đã render rồi
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Render bảng nếu không có filter active
+                    if (!hasActiveFilters) {
+                        this.renderBanHangTableWithPagination(cachedBanHang.data);
+                        this.updateBanHangPaginationClientSide(cachedBanHang.data);
+                        this.updateLastUpdateTime('banhang');
+                    }
                     console.log('✅ Loaded banhang from cache');
                 }
                 break;
@@ -2147,6 +2175,9 @@ function saveFilterStateToStorage(filterState, storageKey) {
             imeiV5: filterState.imeiV5 || '',
             selectedDongMay: Array.from(filterState.selectedDongMay || []),
             selectedDungLuong: Array.from(filterState.selectedDungLuong || []),
+            // Các field tùy chọn cho banhang
+            khachHang: filterState.khachHang || '',
+            selectedMonths: filterState.selectedMonths ? Array.from(filterState.selectedMonths) : [],
             // Không lưu allDongMayOptions và allDungLuongOptions (sẽ load lại từ data)
             // Không lưu filteredData (sẽ filter lại từ cache)
         };
@@ -2168,6 +2199,14 @@ function restoreFilterStateFromStorage(filterState, storageKey) {
         filterState.selectedDongMay = new Set(stateData.selectedDongMay || []);
         filterState.selectedDungLuong = new Set(stateData.selectedDungLuong || []);
         
+        // Các field tùy chọn cho banhang
+        if (stateData.khachHang !== undefined) {
+            filterState.khachHang = stateData.khachHang || '';
+        }
+        if (stateData.selectedMonths !== undefined) {
+            filterState.selectedMonths = new Set(stateData.selectedMonths || []);
+        }
+        
         console.log(`📦 Restored filter state from localStorage: ${storageKey}`);
         return true;
     } catch (e) {
@@ -2179,10 +2218,38 @@ function restoreFilterStateFromStorage(filterState, storageKey) {
 // Khôi phục UI từ filter state (input values, checkboxes)
 function restoreFilterUIFromState(filterState, prefix) {
     // Khôi phục IMEI V5 input
-    const imeiV5InputId = prefix === 'tonkho' ? 'imeiV5Search' : 'nhapImeiV5Search';
-    const imeiV5Input = document.getElementById(imeiV5InputId);
-    if (imeiV5Input && filterState.imeiV5) {
-        imeiV5Input.value = filterState.imeiV5;
+    let imeiV5InputId;
+    if (prefix === 'tonkho') {
+        imeiV5InputId = 'imeiV5Search';
+    } else if (prefix === 'nhaphang') {
+        imeiV5InputId = 'nhapImeiV5Search';
+    } else if (prefix === 'banhang') {
+        imeiV5InputId = 'banhangImeiV5Search';
+    }
+    if (imeiV5InputId) {
+        const imeiV5Input = document.getElementById(imeiV5InputId);
+        if (imeiV5Input && filterState.imeiV5) {
+            imeiV5Input.value = filterState.imeiV5;
+        }
+    }
+    
+    // Khôi phục Khách hàng input (cho banhang)
+    if (prefix === 'banhang' && filterState.khachHang) {
+        const khachHangInput = document.getElementById('banhangKhachHangSearch');
+        if (khachHangInput) {
+            khachHangInput.value = filterState.khachHang;
+        }
+    }
+    
+    // Khôi phục selectedMonths (cho banhang)
+    if (prefix === 'banhang' && filterState.selectedMonths && filterState.selectedMonths.size > 0) {
+        // Render lại month checkboxes với selected state
+        if (typeof renderBanHangMonthOptions === 'function') {
+            renderBanHangMonthOptions();
+        }
+        if (typeof updateBanHangMonthCount === 'function') {
+            updateBanHangMonthCount();
+        }
     }
     
     // Khôi phục Dòng Máy checkboxes - phải render lại options trước
@@ -2196,13 +2263,26 @@ function restoreFilterUIFromState(filterState, prefix) {
             if (typeof renderNhapDongMayOptions === 'function') {
                 renderNhapDongMayOptions();
             }
+        } else if (prefix === 'banhang') {
+            if (typeof renderBanHangDongMayOptions === 'function') {
+                renderBanHangDongMayOptions();
+            }
         }
         // Update count display
-        const dongMayCountId = prefix === 'tonkho' ? 'dongMayCount' : 'nhapDongMayCount';
-        const dongMayCount = document.getElementById(dongMayCountId);
-        if (dongMayCount) {
-            const count = filterState.selectedDongMay.size;
-            dongMayCount.textContent = count > 0 ? `${count}` : 'Tất cả';
+        let dongMayCountId;
+        if (prefix === 'tonkho') {
+            dongMayCountId = 'dongMayCount';
+        } else if (prefix === 'nhaphang') {
+            dongMayCountId = 'nhapDongMayCount';
+        } else if (prefix === 'banhang') {
+            dongMayCountId = 'banhangDongMayCount';
+        }
+        if (dongMayCountId) {
+            const dongMayCount = document.getElementById(dongMayCountId);
+            if (dongMayCount) {
+                const count = filterState.selectedDongMay.size;
+                dongMayCount.textContent = count > 0 ? `${count}` : 'Tất cả';
+            }
         }
     }
     
@@ -2217,13 +2297,26 @@ function restoreFilterUIFromState(filterState, prefix) {
             if (typeof renderNhapDungLuongOptions === 'function') {
                 renderNhapDungLuongOptions();
             }
+        } else if (prefix === 'banhang') {
+            if (typeof renderBanHangDungLuongOptions === 'function') {
+                renderBanHangDungLuongOptions();
+            }
         }
         // Update count display
-        const dungLuongCountId = prefix === 'tonkho' ? 'dungLuongCount' : 'nhapDungLuongCount';
-        const dungLuongCount = document.getElementById(dungLuongCountId);
-        if (dungLuongCount) {
-            const count = filterState.selectedDungLuong.size;
-            dungLuongCount.textContent = count > 0 ? `${count}` : 'Tất cả';
+        let dungLuongCountId;
+        if (prefix === 'tonkho') {
+            dungLuongCountId = 'dungLuongCount';
+        } else if (prefix === 'nhaphang') {
+            dungLuongCountId = 'nhapDungLuongCount';
+        } else if (prefix === 'banhang') {
+            dungLuongCountId = 'banhangDungLuongCount';
+        }
+        if (dungLuongCountId) {
+            const dungLuongCount = document.getElementById(dungLuongCountId);
+            if (dungLuongCount) {
+                const count = filterState.selectedDungLuong.size;
+                dungLuongCount.textContent = count > 0 ? `${count}` : 'Tất cả';
+            }
         }
     }
 }
@@ -3524,6 +3617,9 @@ function clearAllBanHangFilters() {
     
     applyBanHangFilters();
     
+    // ✅ Clear filter state from localStorage
+    clearFilterStateFromStorage('qlbh_filter_banhang');
+    
     const clearBtn = document.querySelector('#banhang .btn-clear-filters');
     if (clearBtn) clearBtn.style.display = 'none';
 }
@@ -3600,6 +3696,11 @@ function applyBanHangFilters() {
         window.admin.updateBanHangPaginationClientSide(cachedData.data);
         const summaryEl = document.getElementById('banhangFilterSummary');
         if (summaryEl) summaryEl.style.display = 'none';
+    }
+    
+    // ✅ Lưu filter state vào localStorage
+    if (typeof saveFilterStateToStorage === 'function') {
+        saveFilterStateToStorage(banHangFilterState, 'qlbh_filter_banhang');
     }
 }
 
