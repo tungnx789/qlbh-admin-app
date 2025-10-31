@@ -204,9 +204,36 @@ class QLBHAdmin {
                 // Load bảng chính Tồn Kho
                 const cachedTonKho = this.getCacheData('tonkho');
                 if (cachedTonKho && cachedTonKho.data) {
-                    this.renderTonKhoTableWithPagination(cachedTonKho.data);
-                    this.updateTonKhoPaginationClientSide(cachedTonKho.data);
-                    this.updateLastUpdateTime('tonkho');
+                    // Populate filter options trước
+                    if (typeof populateFilterOptions === 'function') {
+                        populateFilterOptions(cachedTonKho.data);
+                    }
+                    
+                    // Khôi phục filter state và apply filter
+                    let hasActiveFilters = false;
+                    if (typeof restoreFilterStateFromStorage === 'function') {
+                        if (restoreFilterStateFromStorage(tonKhoFilterState, 'qlbh_filter_tonkho')) {
+                            if (typeof restoreFilterUIFromState === 'function') {
+                                restoreFilterUIFromState(tonKhoFilterState, 'tonkho');
+                            }
+                            // Apply filter nếu có filter active
+                            if ((tonKhoFilterState.imeiV5 && tonKhoFilterState.imeiV5.length === 5) || 
+                                (tonKhoFilterState.selectedDongMay && tonKhoFilterState.selectedDongMay.size > 0) || 
+                                (tonKhoFilterState.selectedDungLuong && tonKhoFilterState.selectedDungLuong.size > 0)) {
+                                if (typeof applyTonKhoMobileFilters === 'function') {
+                                    applyTonKhoMobileFilters();
+                                    hasActiveFilters = true; // applyTonKhoMobileFilters đã render rồi
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Render bảng nếu không có filter active
+                    if (!hasActiveFilters) {
+                        this.renderTonKhoTableWithPagination(cachedTonKho.data);
+                        this.updateTonKhoPaginationClientSide(cachedTonKho.data);
+                        this.updateLastUpdateTime('tonkho');
+                    }
                     console.log('✅ Loaded tonkho from cache');
                 }
                 
@@ -223,9 +250,36 @@ class QLBHAdmin {
             case 'nhaphang':
                 const cachedNhapHang = this.getCacheData('nhaphang');
                 if (cachedNhapHang && cachedNhapHang.data) {
-                    this.renderNhapHangTableWithPagination(cachedNhapHang.data);
-                    this.updateNhapHangPaginationClientSide(cachedNhapHang.data);
-                    this.updateLastUpdateTime('nhaphang');
+                    // Populate filter options trước
+                    if (typeof populateNhapHangFilterOptions === 'function') {
+                        populateNhapHangFilterOptions(cachedNhapHang.data);
+                    }
+                    
+                    // Khôi phục filter state và apply filter
+                    let hasActiveFilters = false;
+                    if (typeof restoreFilterStateFromStorage === 'function') {
+                        if (restoreFilterStateFromStorage(nhapHangFilterState, 'qlbh_filter_nhaphang')) {
+                            if (typeof restoreFilterUIFromState === 'function') {
+                                restoreFilterUIFromState(nhapHangFilterState, 'nhaphang');
+                            }
+                            // Apply filter nếu có filter active
+                            if ((nhapHangFilterState.imeiV5 && nhapHangFilterState.imeiV5.length === 5) || 
+                                (nhapHangFilterState.selectedDongMay && nhapHangFilterState.selectedDongMay.size > 0) || 
+                                (nhapHangFilterState.selectedDungLuong && nhapHangFilterState.selectedDungLuong.size > 0)) {
+                                if (typeof applyNhapHangMobileFilters === 'function') {
+                                    applyNhapHangMobileFilters();
+                                    hasActiveFilters = true; // applyNhapHangMobileFilters đã render rồi
+                                }
+                            }
+                        }
+                    }
+                    
+                    // Render bảng nếu không có filter active
+                    if (!hasActiveFilters) {
+                        this.renderNhapHangTableWithPagination(cachedNhapHang.data);
+                        this.updateNhapHangPaginationClientSide(cachedNhapHang.data);
+                        this.updateLastUpdateTime('nhaphang');
+                    }
                     console.log('✅ Loaded nhaphang from cache');
                 }
                 break;
@@ -2084,6 +2138,106 @@ let nhapHangFilterState = {
     filteredData: null  // Store filtered data for pagination
 };
 
+// ✅ Lưu và khôi phục Filter State vào localStorage
+
+// Lưu filter state vào localStorage
+function saveFilterStateToStorage(filterState, storageKey) {
+    try {
+        const stateToSave = {
+            imeiV5: filterState.imeiV5 || '',
+            selectedDongMay: Array.from(filterState.selectedDongMay || []),
+            selectedDungLuong: Array.from(filterState.selectedDungLuong || []),
+            // Không lưu allDongMayOptions và allDungLuongOptions (sẽ load lại từ data)
+            // Không lưu filteredData (sẽ filter lại từ cache)
+        };
+        localStorage.setItem(storageKey, JSON.stringify(stateToSave));
+        console.log(`💾 Saved filter state to localStorage: ${storageKey}`);
+    } catch (e) {
+        console.warn(`Error saving filter state to localStorage (${storageKey}):`, e);
+    }
+}
+
+// Khôi phục filter state từ localStorage
+function restoreFilterStateFromStorage(filterState, storageKey) {
+    try {
+        const saved = localStorage.getItem(storageKey);
+        if (!saved) return false;
+        
+        const stateData = JSON.parse(saved);
+        filterState.imeiV5 = stateData.imeiV5 || '';
+        filterState.selectedDongMay = new Set(stateData.selectedDongMay || []);
+        filterState.selectedDungLuong = new Set(stateData.selectedDungLuong || []);
+        
+        console.log(`📦 Restored filter state from localStorage: ${storageKey}`);
+        return true;
+    } catch (e) {
+        console.warn(`Error restoring filter state from localStorage (${storageKey}):`, e);
+        return false;
+    }
+}
+
+// Khôi phục UI từ filter state (input values, checkboxes)
+function restoreFilterUIFromState(filterState, prefix) {
+    // Khôi phục IMEI V5 input
+    const imeiV5InputId = prefix === 'tonkho' ? 'imeiV5Search' : 'nhapImeiV5Search';
+    const imeiV5Input = document.getElementById(imeiV5InputId);
+    if (imeiV5Input && filterState.imeiV5) {
+        imeiV5Input.value = filterState.imeiV5;
+    }
+    
+    // Khôi phục Dòng Máy checkboxes - phải render lại options trước
+    if (filterState.selectedDongMay && filterState.selectedDongMay.size > 0) {
+        // Render lại options với selected state
+        if (prefix === 'tonkho') {
+            if (typeof renderDongMayOptions === 'function') {
+                renderDongMayOptions();
+            }
+        } else if (prefix === 'nhaphang') {
+            if (typeof renderNhapDongMayOptions === 'function') {
+                renderNhapDongMayOptions();
+            }
+        }
+        // Update count display
+        const dongMayCountId = prefix === 'tonkho' ? 'dongMayCount' : 'nhapDongMayCount';
+        const dongMayCount = document.getElementById(dongMayCountId);
+        if (dongMayCount) {
+            const count = filterState.selectedDongMay.size;
+            dongMayCount.textContent = count > 0 ? `${count}` : 'Tất cả';
+        }
+    }
+    
+    // Khôi phục Dung Lượng checkboxes - phải render lại options trước
+    if (filterState.selectedDungLuong && filterState.selectedDungLuong.size > 0) {
+        // Render lại options với selected state
+        if (prefix === 'tonkho') {
+            if (typeof renderDungLuongOptions === 'function') {
+                renderDungLuongOptions();
+            }
+        } else if (prefix === 'nhaphang') {
+            if (typeof renderNhapDungLuongOptions === 'function') {
+                renderNhapDungLuongOptions();
+            }
+        }
+        // Update count display
+        const dungLuongCountId = prefix === 'tonkho' ? 'dungLuongCount' : 'nhapDungLuongCount';
+        const dungLuongCount = document.getElementById(dungLuongCountId);
+        if (dungLuongCount) {
+            const count = filterState.selectedDungLuong.size;
+            dungLuongCount.textContent = count > 0 ? `${count}` : 'Tất cả';
+        }
+    }
+}
+
+// Clear filter state from localStorage
+function clearFilterStateFromStorage(storageKey) {
+    try {
+        localStorage.removeItem(storageKey);
+        console.log(`🗑️ Cleared filter state from localStorage: ${storageKey}`);
+    } catch (e) {
+        console.warn(`Error clearing filter state from localStorage (${storageKey}):`, e);
+    }
+}
+
 // Initialize mobile filters when DOM is ready
 function initMobileFilters() {
     console.log('🔧 Initializing mobile filters...');
@@ -2246,17 +2400,17 @@ function populateFilterOptions(tonkhoData) {
     tonkhoData.rows.forEach(item => {
         // Try array first
         if (Array.isArray(item)) {
-            if (item[2]) dongMaySet.add(item[2]);
-            if (item[3]) dungLuongSet.add(item[3]);
+            if (item[2]) dongMaySet.add(String(item[2]));
+            if (item[3]) dungLuongSet.add(String(item[3]));
         } else {
             // Try object with different possible property names
-            if (item.dongMay) dongMaySet.add(item.dongMay);
-            if (item.DÒNG_MÁY) dongMaySet.add(item.DÒNG_MÁY);
-            if (item['Dòng Máy']) dongMaySet.add(item['Dòng Máy']);
+            if (item.dongMay) dongMaySet.add(String(item.dongMay));
+            if (item.DÒNG_MÁY) dongMaySet.add(String(item.DÒNG_MÁY));
+            if (item['Dòng Máy']) dongMaySet.add(String(item['Dòng Máy']));
             
-            if (item.dungLuong) dungLuongSet.add(item.dungLuong);
-            if (item.DUNG_LƯỢNG) dungLuongSet.add(item.DUNG_LƯỢNG);
-            if (item['Dung Lượng']) dungLuongSet.add(item['Dung Lượng']);
+            if (item.dungLuong) dungLuongSet.add(String(item.dungLuong));
+            if (item.DUNG_LƯỢNG) dungLuongSet.add(String(item.DUNG_LƯỢNG));
+            if (item['Dung Lượng']) dungLuongSet.add(String(item['Dung Lượng']));
         }
     });
     
@@ -2281,16 +2435,34 @@ function renderDongMayOptions() {
     const options = tonKhoFilterState.allDongMayOptions;
     const selected = tonKhoFilterState.selectedDongMay;
     
-    container.innerHTML = options.map(dongMay => `
-        <label class="multiselect-option">
-            <input 
-                type="checkbox" 
-                value="${dongMay}"
-                ${selected.has(dongMay) ? 'checked' : ''}
-                onchange="toggleDongMay('${dongMay}', this.checked)">
-            <span>${dongMay}</span>
-        </label>
-    `).join('');
+    // Clear container và remove old listeners
+    container.innerHTML = '';
+    
+    options.forEach(dongMay => {
+        const label = document.createElement('label');
+        label.className = 'multiselect-option';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = dongMay;
+        // Convert to string để đảm bảo so sánh chính xác với Set
+        const dongMayStr = String(dongMay);
+        checkbox.checked = selected.has(dongMayStr);
+        checkbox.setAttribute('data-filter-type', 'dongMay');
+        checkbox.setAttribute('data-filter-value', dongMay);
+        
+        // Add event listener thay vì inline onchange để tránh lỗi escape
+        checkbox.addEventListener('change', function() {
+            toggleDongMay(dongMay, this.checked);
+        });
+        
+        const span = document.createElement('span');
+        span.textContent = dongMay;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        container.appendChild(label);
+    });
 }
 
 // Render Dung Luong options
@@ -2301,38 +2473,66 @@ function renderDungLuongOptions() {
     const options = tonKhoFilterState.allDungLuongOptions;
     const selected = tonKhoFilterState.selectedDungLuong;
     
-    container.innerHTML = options.map(dungLuong => `
-        <label class="multiselect-option">
-            <input 
-                type="checkbox" 
-                value="${dungLuong}"
-                ${selected.has(dungLuong) ? 'checked' : ''}
-                onchange="toggleDungLuong('${dungLuong}', this.checked)">
-            <span>${dungLuong}</span>
-        </label>
-    `).join('');
+    // Clear container và remove old listeners
+    container.innerHTML = '';
+    
+    options.forEach(dungLuong => {
+        const label = document.createElement('label');
+        label.className = 'multiselect-option';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = dungLuong;
+        // Convert to string để đảm bảo so sánh chính xác với Set
+        const dungLuongStr = String(dungLuong);
+        checkbox.checked = selected.has(dungLuongStr);
+        checkbox.setAttribute('data-filter-type', 'dungLuong');
+        checkbox.setAttribute('data-filter-value', dungLuong);
+        
+        // Add event listener thay vì inline onchange để tránh lỗi escape
+        checkbox.addEventListener('change', function() {
+            toggleDungLuong(dungLuong, this.checked);
+        });
+        
+        const span = document.createElement('span');
+        span.textContent = dungLuong;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        container.appendChild(label);
+    });
 }
 
 // Toggle Dong May selection
 function toggleDongMay(dongMay, selected) {
+    // Convert to string để đảm bảo so sánh chính xác
+    const dongMayStr = String(dongMay);
+    
     if (selected) {
-        tonKhoFilterState.selectedDongMay.add(dongMay);
+        tonKhoFilterState.selectedDongMay.add(dongMayStr);
     } else {
-        tonKhoFilterState.selectedDongMay.delete(dongMay);
+        tonKhoFilterState.selectedDongMay.delete(dongMayStr);
     }
     
+    // Render lại để đảm bảo checkbox state được sync
+    renderDongMayOptions();
     updateDongMayCount();
     applyTonKhoMobileFilters();
 }
 
 // Toggle Dung Luong selection
 function toggleDungLuong(dungLuong, selected) {
+    // Convert to string để đảm bảo so sánh chính xác
+    const dungLuongStr = String(dungLuong);
+    
     if (selected) {
-        tonKhoFilterState.selectedDungLuong.add(dungLuong);
+        tonKhoFilterState.selectedDungLuong.add(dungLuongStr);
     } else {
-        tonKhoFilterState.selectedDungLuong.delete(dungLuong);
+        tonKhoFilterState.selectedDungLuong.delete(dungLuongStr);
     }
     
+    // Render lại để đảm bảo checkbox state được sync
+    renderDungLuongOptions();
     updateDungLuongCount();
     applyTonKhoMobileFilters();
 }
@@ -2369,7 +2569,8 @@ function updateDungLuongCount() {
 // Select All / Clear All functions
 function selectAllDongMay() {
     tonKhoFilterState.allDongMayOptions.forEach(dongMay => {
-        tonKhoFilterState.selectedDongMay.add(dongMay);
+        // Convert to string để đảm bảo so sánh chính xác
+        tonKhoFilterState.selectedDongMay.add(String(dongMay));
     });
     renderDongMayOptions();
     updateDongMayCount();
@@ -2385,7 +2586,8 @@ function clearAllDongMay() {
 
 function selectAllDungLuong() {
     tonKhoFilterState.allDungLuongOptions.forEach(dungLuong => {
-        tonKhoFilterState.selectedDungLuong.add(dungLuong);
+        // Convert to string để đảm bảo so sánh chính xác
+        tonKhoFilterState.selectedDungLuong.add(String(dungLuong));
     });
     renderDungLuongOptions();
     updateDungLuongCount();
@@ -2418,6 +2620,9 @@ function clearAllTonKhoFilters() {
     updateDungLuongCount();
     
     applyTonKhoMobileFilters();
+    
+    // ✅ Clear filter state from localStorage
+    clearFilterStateFromStorage('qlbh_filter_tonkho');
     
     // Hide clear button after clearing
     const clearBtn = document.querySelector('.btn-clear-filters');
@@ -2558,6 +2763,9 @@ function applyTonKhoMobileFilters() {
         const summaryEl = document.getElementById('filterSummary');
         if (summaryEl) summaryEl.style.display = 'none';
     }
+    
+    // ✅ Lưu filter state vào localStorage sau khi apply
+    saveFilterStateToStorage(tonKhoFilterState, 'qlbh_filter_tonkho');
 }
 
 // Update filter summary
@@ -2686,8 +2894,9 @@ function populateNhapHangFilterOptions(data) {
     
     data.rows.forEach(item => {
         if (Array.isArray(item)) {
-            if (item[2]) dongMaySet.add(item[2]);  // DÒNG MÁY
-            if (item[3]) dungLuongSet.add(item[3]); // DUNG LƯỢNG
+            // Convert to string để đảm bảo so sánh chính xác
+            if (item[2]) dongMaySet.add(String(item[2]));  // DÒNG MÁY
+            if (item[3]) dungLuongSet.add(String(item[3])); // DUNG LƯỢNG
         }
     });
     
@@ -2705,13 +2914,34 @@ function renderNhapDongMayOptions() {
     const options = nhapHangFilterState.allDongMayOptions;
     const selected = nhapHangFilterState.selectedDongMay;
     
-    container.innerHTML = options.map(item => `
-        <label class="multiselect-option">
-            <input type="checkbox" value="${item}" ${selected.has(item) ? 'checked' : ''}
-                   onchange="toggleNhapDongMay('${item}', this.checked)">
-            <span>${item}</span>
-        </label>
-    `).join('');
+    // Clear container và remove old listeners
+    container.innerHTML = '';
+    
+    options.forEach(item => {
+        const label = document.createElement('label');
+        label.className = 'multiselect-option';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = item;
+        // Convert to string để đảm bảo so sánh chính xác với Set
+        const itemStr = String(item);
+        checkbox.checked = selected.has(itemStr);
+        checkbox.setAttribute('data-filter-type', 'nhapDongMay');
+        checkbox.setAttribute('data-filter-value', item);
+        
+        // Add event listener thay vì inline onchange để tránh lỗi escape
+        checkbox.addEventListener('change', function() {
+            toggleNhapDongMay(item, this.checked);
+        });
+        
+        const span = document.createElement('span');
+        span.textContent = item;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        container.appendChild(label);
+    });
 }
 
 function renderNhapDungLuongOptions() {
@@ -2721,20 +2951,44 @@ function renderNhapDungLuongOptions() {
     const options = nhapHangFilterState.allDungLuongOptions;
     const selected = nhapHangFilterState.selectedDungLuong;
     
-    container.innerHTML = options.map(item => `
-        <label class="multiselect-option">
-            <input type="checkbox" value="${item}" ${selected.has(item) ? 'checked' : ''}
-                   onchange="toggleNhapDungLuong('${item}', this.checked)">
-            <span>${item}</span>
-        </label>
-    `).join('');
+    // Clear container và remove old listeners
+    container.innerHTML = '';
+    
+    options.forEach(item => {
+        const label = document.createElement('label');
+        label.className = 'multiselect-option';
+        
+        const checkbox = document.createElement('input');
+        checkbox.type = 'checkbox';
+        checkbox.value = item;
+        // Convert to string để đảm bảo so sánh chính xác với Set
+        const itemStr = String(item);
+        checkbox.checked = selected.has(itemStr);
+        checkbox.setAttribute('data-filter-type', 'nhapDungLuong');
+        checkbox.setAttribute('data-filter-value', item);
+        
+        // Add event listener thay vì inline onchange để tránh lỗi escape
+        checkbox.addEventListener('change', function() {
+            toggleNhapDungLuong(item, this.checked);
+        });
+        
+        const span = document.createElement('span');
+        span.textContent = item;
+        
+        label.appendChild(checkbox);
+        label.appendChild(span);
+        container.appendChild(label);
+    });
 }
 
 function toggleNhapDongMay(dongMay, selected) {
+    // Convert to string để đảm bảo so sánh chính xác
+    const dongMayStr = String(dongMay);
+    
     if (selected) {
-        nhapHangFilterState.selectedDongMay.add(dongMay);
+        nhapHangFilterState.selectedDongMay.add(dongMayStr);
     } else {
-        nhapHangFilterState.selectedDongMay.delete(dongMay);
+        nhapHangFilterState.selectedDongMay.delete(dongMayStr);
     }
     updateNhapDongMayCount();
     renderNhapDongMayOptions();
@@ -2742,10 +2996,13 @@ function toggleNhapDongMay(dongMay, selected) {
 }
 
 function toggleNhapDungLuong(dungLuong, selected) {
+    // Convert to string để đảm bảo so sánh chính xác
+    const dungLuongStr = String(dungLuong);
+    
     if (selected) {
-        nhapHangFilterState.selectedDungLuong.add(dungLuong);
+        nhapHangFilterState.selectedDungLuong.add(dungLuongStr);
     } else {
-        nhapHangFilterState.selectedDungLuong.delete(dungLuong);
+        nhapHangFilterState.selectedDungLuong.delete(dungLuongStr);
     }
     updateNhapDungLuongCount();
     renderNhapDungLuongOptions();
@@ -2769,7 +3026,10 @@ function updateNhapDungLuongCount() {
 }
 
 function selectAllNhapDongMay() {
-    nhapHangFilterState.allDongMayOptions.forEach(item => nhapHangFilterState.selectedDongMay.add(item));
+    nhapHangFilterState.allDongMayOptions.forEach(item => {
+        // Convert to string để đảm bảo so sánh chính xác
+        nhapHangFilterState.selectedDongMay.add(String(item));
+    });
     updateNhapDongMayCount();
     renderNhapDongMayOptions();
     applyNhapHangMobileFilters();
@@ -2783,7 +3043,10 @@ function clearAllNhapDongMay() {
 }
 
 function selectAllNhapDungLuong() {
-    nhapHangFilterState.allDungLuongOptions.forEach(item => nhapHangFilterState.selectedDungLuong.add(item));
+    nhapHangFilterState.allDungLuongOptions.forEach(item => {
+        // Convert to string để đảm bảo so sánh chính xác
+        nhapHangFilterState.selectedDungLuong.add(String(item));
+    });
     updateNhapDungLuongCount();
     renderNhapDungLuongOptions();
     applyNhapHangMobileFilters();
@@ -2811,6 +3074,9 @@ function clearAllNhapHangFilters() {
     updateNhapDungLuongCount();
     
     applyNhapHangMobileFilters();
+    
+    // ✅ Clear filter state from localStorage
+    clearFilterStateFromStorage('qlbh_filter_nhaphang');
     
     const clearBtn = document.querySelector('#nhaphang .btn-clear-filters');
     if (clearBtn) clearBtn.style.display = 'none';
@@ -2881,6 +3147,9 @@ function applyNhapHangMobileFilters() {
         const summaryEl = document.getElementById('nhapFilterSummary');
         if (summaryEl) summaryEl.style.display = 'none';
     }
+    
+    // ✅ Lưu filter state vào localStorage sau khi apply
+    saveFilterStateToStorage(nhapHangFilterState, 'qlbh_filter_nhaphang');
 }
 
 function updateNhapFilterSummary(filtered, total) {
@@ -2901,6 +3170,17 @@ QLBHAdmin.prototype.loadNhapHang = async function() {
     const cachedData = this.getCacheData('nhaphang');
     if (cachedData && cachedData.data) {
         populateNhapHangFilterOptions(cachedData.data);
+        
+        // ✅ Khôi phục filter state từ localStorage và apply filter
+        if (restoreFilterStateFromStorage(nhapHangFilterState, 'qlbh_filter_nhaphang')) {
+            restoreFilterUIFromState(nhapHangFilterState, 'nhaphang');
+            // Apply filter nếu có filter active
+            if (nhapHangFilterState.imeiV5.length === 5 || 
+                nhapHangFilterState.selectedDongMay.size > 0 || 
+                nhapHangFilterState.selectedDungLuong.size > 0) {
+                applyNhapHangMobileFilters();
+            }
+        }
     }
 };
 
@@ -2913,6 +3193,17 @@ QLBHAdmin.prototype.loadTonKho = async function() {
     const cachedData = this.getCacheData('tonkho');
     if (cachedData && cachedData.data) {
         populateFilterOptions(cachedData.data);
+        
+        // ✅ Khôi phục filter state từ localStorage và apply filter
+        if (restoreFilterStateFromStorage(tonKhoFilterState, 'qlbh_filter_tonkho')) {
+            restoreFilterUIFromState(tonKhoFilterState, 'tonkho');
+            // Apply filter nếu có filter active
+            if (tonKhoFilterState.imeiV5.length === 5 || 
+                tonKhoFilterState.selectedDongMay.size > 0 || 
+                tonKhoFilterState.selectedDungLuong.size > 0) {
+                applyTonKhoMobileFilters();
+            }
+        }
     }
 };
 
