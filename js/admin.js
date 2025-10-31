@@ -182,17 +182,103 @@ class QLBHAdmin {
             }
         }
         
-        // DON'T auto-load data - wait for user to click refresh button
-        console.log('switchModule - Switched to:', moduleName, '- No auto-load');
-        
-        // Nếu chuyển sang tab Tồn Kho, render bảng báo cáo từ cache nếu có
-        if (moduleName === 'tonkho') {
-            const cachedBaoCao = this.getCacheData('baocao');
-            if (cachedBaoCao && cachedBaoCao.data) {
-                this.renderTonKhoBaoCaoTable(cachedBaoCao.data);
-                this.updateTonKhoBaoCaoSummary(cachedBaoCao.data);
-                this.updateLastUpdateTime('tonkhoBaoCao');
-            }
+        // ✅ TỰ ĐỘNG LOAD TỪ CACHE KHI CHUYỂN TAB (reload trang hoặc đóng/mở lại trình duyệt)
+        console.log('switchModule - Switched to:', moduleName, '- Loading from cache if available');
+        this.loadModuleFromCache(moduleName);
+    }
+
+    // Load dữ liệu từ cache cho module cụ thể (không gọi API)
+    loadModuleFromCache(moduleName) {
+        switch(moduleName) {
+            case 'dashboard':
+                const cachedDashboard = this.getCacheData('dashboard');
+                if (cachedDashboard && cachedDashboard.data) {
+                    this.updateDashboardStats(cachedDashboard.data);
+                    this.updateCharts(cachedDashboard.data);
+                    this.updateLastUpdateTime('dashboard');
+                    console.log('✅ Loaded dashboard from cache');
+                }
+                break;
+                
+            case 'tonkho':
+                // Load bảng chính Tồn Kho
+                const cachedTonKho = this.getCacheData('tonkho');
+                if (cachedTonKho && cachedTonKho.data) {
+                    this.renderTonKhoTableWithPagination(cachedTonKho.data);
+                    this.updateTonKhoPaginationClientSide(cachedTonKho.data);
+                    this.updateLastUpdateTime('tonkho');
+                    console.log('✅ Loaded tonkho from cache');
+                }
+                
+                // Load bảng báo cáo Tồn Kho Theo Dòng Máy
+                const cachedBaoCao = this.getCacheData('baocao');
+                if (cachedBaoCao && cachedBaoCao.data) {
+                    this.renderTonKhoBaoCaoTable(cachedBaoCao.data);
+                    this.updateTonKhoBaoCaoSummary(cachedBaoCao.data);
+                    this.updateLastUpdateTime('tonkhoBaoCao');
+                    console.log('✅ Loaded tonkho baocao from cache');
+                }
+                break;
+                
+            case 'nhaphang':
+                const cachedNhapHang = this.getCacheData('nhaphang');
+                if (cachedNhapHang && cachedNhapHang.data) {
+                    this.renderNhapHangTableWithPagination(cachedNhapHang.data);
+                    this.updateNhapHangPaginationClientSide(cachedNhapHang.data);
+                    this.updateLastUpdateTime('nhaphang');
+                    console.log('✅ Loaded nhaphang from cache');
+                }
+                break;
+                
+            case 'banhang':
+                const cachedBanHang = this.getCacheData('banhang');
+                if (cachedBanHang && cachedBanHang.data) {
+                    this.renderBanHangTableWithPagination(cachedBanHang.data);
+                    this.updateBanHangPaginationClientSide(cachedBanHang.data);
+                    this.updateLastUpdateTime('banhang');
+                    console.log('✅ Loaded banhang from cache');
+                }
+                break;
+                
+            case 'xuathuy':
+                const cachedXuatHuy = this.getCacheData('xuathuy');
+                if (cachedXuatHuy && cachedXuatHuy.data) {
+                    this.renderXuatHuyTable(cachedXuatHuy.data);
+                    this.updateLastUpdateTime('xuathuy');
+                    console.log('✅ Loaded xuathuy from cache');
+                }
+                break;
+                
+            case 'baocao':
+                // Load bảng Tồn Kho Theo Dòng Máy
+                const cachedBaoCaoTab = this.getCacheData('baocao');
+                if (cachedBaoCaoTab && cachedBaoCaoTab.data) {
+                    this.renderBaoCaoTable(cachedBaoCaoTab.data);
+                    this.updateBaoCaoSummary(cachedBaoCaoTab.data);
+                    // Cũng render vào tab Tồn Kho nếu có
+                    this.renderTonKhoBaoCaoTable(cachedBaoCaoTab.data);
+                    this.updateTonKhoBaoCaoSummary(cachedBaoCaoTab.data);
+                    this.updateLastUpdateTime('baocaoTonKho');
+                    this.updateLastUpdateTime('tonkhoBaoCao');
+                    console.log('✅ Loaded baocao from cache');
+                }
+                
+                // Load bảng TOP Sản Phẩm
+                const cachedTopProducts = this.getCacheData('topproducts');
+                if (cachedTopProducts && cachedTopProducts.data) {
+                    this.renderTopProductsTable(cachedTopProducts.data);
+                    this.updateLastUpdateTime('topProducts');
+                    console.log('✅ Loaded topproducts from cache');
+                }
+                break;
+                
+            case 'search':
+                // Tab search không có cache riêng, cần nhập lại điều kiện tìm kiếm
+                console.log('ℹ️ Search module - no cache available');
+                break;
+                
+            default:
+                console.log(`ℹ️ Module ${moduleName} - no cache handler`);
         }
     }
 
