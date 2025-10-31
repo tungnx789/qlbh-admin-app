@@ -184,6 +184,16 @@ class QLBHAdmin {
         
         // DON'T auto-load data - wait for user to click refresh button
         console.log('switchModule - Switched to:', moduleName, '- No auto-load');
+        
+        // Nếu chuyển sang tab Tồn Kho, render bảng báo cáo từ cache nếu có
+        if (moduleName === 'tonkho') {
+            const cachedBaoCao = this.getCacheData('baocao');
+            if (cachedBaoCao && cachedBaoCao.data) {
+                this.renderTonKhoBaoCaoTable(cachedBaoCao.data);
+                this.updateTonKhoBaoCaoSummary(cachedBaoCao.data);
+                this.updateLastUpdateTime('tonkhoBaoCao');
+            }
+        }
     }
 
     // Cache Methods with localStorage persistence
@@ -242,8 +252,14 @@ class QLBHAdmin {
     
     updateLastUpdateTime(module) {
         const lastUpdateElement = document.getElementById(`${module}LastUpdate`);
-        if (lastUpdateElement && this.cacheData[module].lastUpdate) {
-            lastUpdateElement.textContent = `Cập nhật lần cuối: ${this.cacheData[module].lastUpdate}`;
+        if (!lastUpdateElement) return;
+        
+        // tonkhoBaoCao dùng chung timestamp với baocao
+        const cacheKey = module === 'tonkhoBaoCao' ? 'baocao' : module;
+        const cache = this.cacheData[cacheKey];
+        
+        if (cache && cache.lastUpdate) {
+            lastUpdateElement.textContent = `Cập nhật lần cuối: ${cache.lastUpdate}`;
         }
     }
     
@@ -561,6 +577,9 @@ class QLBHAdmin {
             this.updateLastUpdateTime('tonkho');
             console.log('✅ loadTonKho - All data loaded and cached');
         }
+        
+        // Tự động load báo cáo tồn kho khi vào tab Tồn Kho
+        await this.loadBaoCaoTonKhoOnly();
     }
     
     renderTonKhoTableWithPagination(data) {
@@ -1155,7 +1174,11 @@ class QLBHAdmin {
             console.log('📦 Using cached data for báo cáo tồn kho');
             this.renderBaoCaoTable(cachedData.data);
             this.updateBaoCaoSummary(cachedData.data);
+            // Cũng render vào tab Tồn Kho nếu có
+            this.renderTonKhoBaoCaoTable(cachedData.data);
+            this.updateTonKhoBaoCaoSummary(cachedData.data);
             this.updateLastUpdateTime('baocao');
+            this.updateLastUpdateTime('tonkhoBaoCao');
             return;
         }
         
@@ -1171,7 +1194,11 @@ class QLBHAdmin {
             this.setCacheData('baocao', response.data);
             this.renderBaoCaoTable(response.data);
             this.updateBaoCaoSummary(response.data);
+            // Cũng render vào tab Tồn Kho nếu có
+            this.renderTonKhoBaoCaoTable(response.data);
+            this.updateTonKhoBaoCaoSummary(response.data);
             this.updateLastUpdateTime('baocaoTonKho'); // ✅ Timestamp riêng cho báo cáo tồn kho
+            this.updateLastUpdateTime('tonkhoBaoCao'); // ✅ Timestamp cho bảng trong tab Tồn Kho
             console.log('✅ loadBaoCaoTonKhoOnly completed successfully');
         } else {
             this.showError('Lỗi tải dữ liệu báo cáo tồn kho');
@@ -1186,7 +1213,11 @@ class QLBHAdmin {
         if (cachedData.data) {
             this.renderBaoCaoTable(cachedData.data);
             this.updateBaoCaoSummary(cachedData.data);
+            // Cũng render vào tab Tồn Kho nếu có
+            this.renderTonKhoBaoCaoTable(cachedData.data);
+            this.updateTonKhoBaoCaoSummary(cachedData.data);
             this.updateLastUpdateTime('baocaoTonKho'); // ✅ Timestamp riêng cho báo cáo tồn kho
+            this.updateLastUpdateTime('tonkhoBaoCao'); // ✅ Timestamp cho bảng trong tab Tồn Kho
             
             // Load TOP SẢN PHẨM from cache if available
             const cachedTopProducts = this.getCacheData('topproducts');
@@ -1210,7 +1241,11 @@ class QLBHAdmin {
             this.setCacheData('baocao', response.data);
             this.renderBaoCaoTable(response.data);
             this.updateBaoCaoSummary(response.data);
+            // Cũng render vào tab Tồn Kho nếu có
+            this.renderTonKhoBaoCaoTable(response.data);
+            this.updateTonKhoBaoCaoSummary(response.data);
             this.updateLastUpdateTime('baocaoTonKho'); // ✅ Timestamp riêng cho báo cáo tồn kho
+            this.updateLastUpdateTime('tonkhoBaoCao'); // ✅ Timestamp cho bảng trong tab Tồn Kho
         }
         
         // Load TOP SẢN PHẨM khi vào tab Báo Cáo
@@ -1243,6 +1278,49 @@ class QLBHAdmin {
     updateBaoCaoSummary(data) {
         document.getElementById('totalQuantity').textContent = data.totalTonKho || 0;
         document.getElementById('totalValue').textContent = this.formatCurrency(data.totalValue || 0);
+    }
+
+    // Render báo cáo tồn kho trong tab Tồn Kho
+    renderTonKhoBaoCaoTable(data) {
+        const tbody = document.getElementById('tonkhoBaoCaoTableBody');
+        if (!tbody) return; // Tab Tồn Kho chưa được load
+        
+        // Chỉ render khi tab Tồn Kho đang active (tối ưu hiệu năng)
+        const tonkhoModule = document.getElementById('tonkho');
+        if (!tonkhoModule || !tonkhoModule.classList.contains('active')) {
+            return; // Tab chưa hiển thị, không cần render ngay
+        }
+        
+        tbody.innerHTML = '';
+
+        if (!data.tonKhoByDongMay || data.tonKhoByDongMay.length === 0) {
+            const row = document.createElement('tr');
+            row.innerHTML = '<td colspan="4" class="text-center">Không có dữ liệu</td>';
+            tbody.appendChild(row);
+            return;
+        }
+
+        data.tonKhoByDongMay.forEach((item, index) => {
+            const row = document.createElement('tr');
+            row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${item.dongMay || ''}</td>
+                <td class="text-right">${item.soLuong || 0}</td>
+                <td class="text-right">${this.formatCurrency(item.giaTri || 0)}</td>
+            `;
+            tbody.appendChild(row);
+        });
+    }
+
+    updateTonKhoBaoCaoSummary(data) {
+        const totalQuantityEl = document.getElementById('tonkhoTotalQuantity');
+        const totalValueEl = document.getElementById('tonkhoTotalValue');
+        if (totalQuantityEl) {
+            totalQuantityEl.textContent = data.totalTonKho || 0;
+        }
+        if (totalValueEl) {
+            totalValueEl.textContent = this.formatCurrency(data.totalValue || 0);
+        }
     }
 
     // TOP SẢN PHẨM Methods

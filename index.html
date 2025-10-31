@@ -303,6 +303,51 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Divider Line -->
+            <div class="section-divider"></div>
+
+            <!-- Báo Cáo Tồn Kho Theo Dòng Máy -->
+            <div class="tonkho-baocao-container">
+                <div class="tonkho-baocao-section">
+                    <div class="section-header">
+                        <h3>📦 Tồn Kho Theo Dòng Máy</h3>
+                        <div class="section-actions">
+                            <button class="btn btn-sm btn-primary" onclick="refreshBaoCaoTonKho()">
+                                🔄 Cập Nhật
+                            </button>
+                            <span id="tonkhoBaoCaoLastUpdate" class="last-update"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="baocao-summary">
+                        <div class="summary-item">
+                            <span class="label">Tổng Số Lượng:</span>
+                            <span id="tonkhoTotalQuantity" class="value">0</span>
+                        </div>
+                        <div class="summary-item">
+                            <span class="label">Tổng Giá Trị:</span>
+                            <span id="tonkhoTotalValue" class="value">0 đ</span>
+                        </div>
+                    </div>
+
+                    <div class="table-responsive tonkho-baocao-table">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Dòng Máy</th>
+                                    <th>Số Lượng</th>
+                                    <th>Giá Trị</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tonkhoBaoCaoTableBody">
+                                <!-- Data will be loaded here -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <!-- NhapHang Module -->
