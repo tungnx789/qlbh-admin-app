@@ -2166,6 +2166,26 @@ let nhapHangFilterState = {
     filteredData: null  // Store filtered data for pagination
 };
 
+// ✅ Normalize Helper Functions
+
+/**
+ * Normalize string: trim spaces and convert to lowercase for comparison
+ * This ensures "11 Pro" and "11 Pro " are treated as the same value
+ * Used for: Dòng Máy, Dung Lượng, Màu Sắc, Khách Hàng
+ */
+function normalizeString(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str.trim().toLowerCase();
+}
+
+/**
+ * Normalize value for display (trim spaces but keep original case)
+ */
+function normalizeForDisplay(str) {
+    if (!str || typeof str !== 'string') return '';
+    return str.trim();
+}
+
 // ✅ Lưu và khôi phục Filter State vào localStorage
 
 // Lưu filter state vào localStorage
@@ -2487,28 +2507,52 @@ function populateFilterOptions(tonkhoData) {
     const firstItem = tonkhoData.rows[0];
     
     // Get unique Dòng Máy - Support both array and object
-    const dongMaySet = new Set();
-    const dungLuongSet = new Set();
+    // Use Map to store normalized -> original mapping (keep first occurrence for display)
+    const dongMayMap = new Map(); // normalized -> original
+    const dungLuongMap = new Map(); // normalized -> original
     
     tonkhoData.rows.forEach(item => {
         // Try array first
         if (Array.isArray(item)) {
-            if (item[2]) dongMaySet.add(String(item[2]));
-            if (item[3]) dungLuongSet.add(String(item[3]));
+            if (item[2]) {
+                const normalized = normalizeString(item[2]);
+                const display = normalizeForDisplay(item[2]);
+                if (normalized && !dongMayMap.has(normalized)) {
+                    dongMayMap.set(normalized, display);
+                }
+            }
+            if (item[3]) {
+                const normalized = normalizeString(item[3]);
+                const display = normalizeForDisplay(item[3]);
+                if (normalized && !dungLuongMap.has(normalized)) {
+                    dungLuongMap.set(normalized, display);
+                }
+            }
         } else {
             // Try object with different possible property names
-            if (item.dongMay) dongMaySet.add(String(item.dongMay));
-            if (item.DÒNG_MÁY) dongMaySet.add(String(item.DÒNG_MÁY));
-            if (item['Dòng Máy']) dongMaySet.add(String(item['Dòng Máy']));
+            let dongMayValue = item.dongMay || item.DÒNG_MÁY || item['Dòng Máy'];
+            if (dongMayValue) {
+                const normalized = normalizeString(dongMayValue);
+                const display = normalizeForDisplay(dongMayValue);
+                if (normalized && !dongMayMap.has(normalized)) {
+                    dongMayMap.set(normalized, display);
+                }
+            }
             
-            if (item.dungLuong) dungLuongSet.add(String(item.dungLuong));
-            if (item.DUNG_LƯỢNG) dungLuongSet.add(String(item.DUNG_LƯỢNG));
-            if (item['Dung Lượng']) dungLuongSet.add(String(item['Dung Lượng']));
+            let dungLuongValue = item.dungLuong || item.DUNG_LƯỢNG || item['Dung Lượng'];
+            if (dungLuongValue) {
+                const normalized = normalizeString(dungLuongValue);
+                const display = normalizeForDisplay(dungLuongValue);
+                if (normalized && !dungLuongMap.has(normalized)) {
+                    dungLuongMap.set(normalized, display);
+                }
+            }
         }
     });
     
-    tonKhoFilterState.allDongMayOptions = [...dongMaySet].sort();
-    tonKhoFilterState.allDungLuongOptions = [...dungLuongSet].sort();
+    // Convert Map values to arrays and sort
+    tonKhoFilterState.allDongMayOptions = Array.from(dongMayMap.values()).sort();
+    tonKhoFilterState.allDungLuongOptions = Array.from(dungLuongMap.values()).sort();
     
     console.log('✅ Extracted options:', {
         dongMay: tonKhoFilterState.allDongMayOptions,
@@ -2782,11 +2826,16 @@ function applyTonKhoMobileFilters() {
     console.log('🔍 Applying Dòng Máy filter...');
     if (tonKhoFilterState.selectedDongMay.size > 0) {
         const beforeCount = filtered.length;
+        // Create normalized set from selected values
+        const normalizedSelectedDongMay = new Set(
+            Array.from(tonKhoFilterState.selectedDongMay).map(v => normalizeString(v))
+        );
+        
         filtered = filtered.filter(item => {
             const dongMay = getValue(item, 2, ['dongMay', 'DÒNG_MÁY', 'Dòng Máy']);
-            // Convert to string to handle type mismatch
-            const dongMayStr = String(dongMay);
-            const isMatch = tonKhoFilterState.selectedDongMay.has(dongMayStr);
+            // Normalize for comparison
+            const normalizedDongMay = normalizeString(dongMay);
+            const isMatch = normalizedSelectedDongMay.has(normalizedDongMay);
             return isMatch;
         });
         console.log(`🔍 Dòng Máy: ${beforeCount} → ${filtered.length} rows`);
@@ -2804,16 +2853,16 @@ function applyTonKhoMobileFilters() {
             console.log(`  - Item[3] = "${dungLuong}" (type: ${typeof dungLuong})`);
         });
         
+        // Create normalized set from selected values
+        const normalizedSelectedDungLuong = new Set(
+            Array.from(tonKhoFilterState.selectedDungLuong).map(v => normalizeString(v))
+        );
+        
         filtered = filtered.filter(item => {
             const dungLuong = getValue(item, 3, ['dungLuong', 'DUNG_LƯỢNG', 'Dung Lượng']);
-            // Convert to string to handle type mismatch
-            const dungLuongStr = String(dungLuong);
-            const isMatch = tonKhoFilterState.selectedDungLuong.has(dungLuongStr);
-            
-            if (!isMatch && filtered.length <= 5) {
-                console.log(`🔍 No match: "${dungLuong}" (${typeof dungLuong}) → "${dungLuongStr}" not in selected set`);
-            }
-            
+            // Normalize for comparison
+            const normalizedDungLuong = normalizeString(dungLuong);
+            const isMatch = normalizedSelectedDungLuong.has(normalizedDungLuong);
             return isMatch;
         });
         console.log(`🔍 Dung Lượng: ${beforeCount} → ${filtered.length} rows`);
@@ -2982,19 +3031,31 @@ function initNhapHangMultiSelectDropdowns() {
 function populateNhapHangFilterOptions(data) {
     if (!data || !data.rows) return;
     
-    const dongMaySet = new Set();
-    const dungLuongSet = new Set();
+    // Use Map to store normalized -> original mapping (keep first occurrence for display)
+    const dongMayMap = new Map(); // normalized -> original
+    const dungLuongMap = new Map(); // normalized -> original
     
     data.rows.forEach(item => {
         if (Array.isArray(item)) {
-            // Convert to string để đảm bảo so sánh chính xác
-            if (item[2]) dongMaySet.add(String(item[2]));  // DÒNG MÁY
-            if (item[3]) dungLuongSet.add(String(item[3])); // DUNG LƯỢNG
+            if (item[2]) {
+                const normalized = normalizeString(item[2]);
+                const display = normalizeForDisplay(item[2]);
+                if (normalized && !dongMayMap.has(normalized)) {
+                    dongMayMap.set(normalized, display);
+                }
+            }
+            if (item[3]) {
+                const normalized = normalizeString(item[3]);
+                const display = normalizeForDisplay(item[3]);
+                if (normalized && !dungLuongMap.has(normalized)) {
+                    dungLuongMap.set(normalized, display);
+                }
+            }
         }
     });
     
-    nhapHangFilterState.allDongMayOptions = [...dongMaySet].sort();
-    nhapHangFilterState.allDungLuongOptions = [...dungLuongSet].sort();
+    nhapHangFilterState.allDongMayOptions = Array.from(dongMayMap.values()).sort();
+    nhapHangFilterState.allDungLuongOptions = Array.from(dungLuongMap.values()).sort();
     
     renderNhapDongMayOptions();
     renderNhapDungLuongOptions();
@@ -3198,21 +3259,27 @@ function applyNhapHangMobileFilters() {
         });
     }
     
-    // Dong May filter
+    // Dong May filter (normalize for comparison)
     if (nhapHangFilterState.selectedDongMay.size > 0) {
+        const normalizedSelectedDongMay = new Set(
+            Array.from(nhapHangFilterState.selectedDongMay).map(v => normalizeString(v))
+        );
         filtered = filtered.filter(item => {
             const dongMay = getValue(item, 2);  // DÒNG MÁY at index 2
-            const dongMayStr = String(dongMay);
-            return nhapHangFilterState.selectedDongMay.has(dongMayStr);
+            const normalizedDongMay = normalizeString(dongMay);
+            return normalizedSelectedDongMay.has(normalizedDongMay);
         });
     }
     
-    // Dung Luong filter
+    // Dung Luong filter (normalize for comparison)
     if (nhapHangFilterState.selectedDungLuong.size > 0) {
+        const normalizedSelectedDungLuong = new Set(
+            Array.from(nhapHangFilterState.selectedDungLuong).map(v => normalizeString(v))
+        );
         filtered = filtered.filter(item => {
             const dungLuong = getValue(item, 3);  // DUNG LƯỢNG at index 3
-            const dungLuongStr = String(dungLuong);
-            return nhapHangFilterState.selectedDungLuong.has(dungLuongStr);
+            const normalizedDungLuong = normalizeString(dungLuong);
+            return normalizedSelectedDungLuong.has(normalizedDungLuong);
         });
     }
     
@@ -3639,12 +3706,13 @@ function applyBanHangFilters() {
         return '';
     }
     
-    // Khách Hàng filter
+    // Khách Hàng filter (normalize for comparison)
     if (banHangFilterState.khachHang) {
+        const normalizedKhachHang = normalizeString(banHangFilterState.khachHang);
         filtered = filtered.filter(item => {
             const khachHang = getValue(item, 9); // Khách Hàng at index 9 in BanHang (skip item[0]=month, item[1]=STT)
-            const khachHangStr = String(khachHang);
-            return khachHangStr.toLowerCase().includes(banHangFilterState.khachHang.toLowerCase());
+            const normalizedItemKhachHang = normalizeString(khachHang);
+            return normalizedItemKhachHang.includes(normalizedKhachHang);
         });
     }
     
@@ -3656,21 +3724,27 @@ function applyBanHangFilters() {
         });
     }
     
-    // Dong May filter
+    // Dong May filter (normalize for comparison)
     if (banHangFilterState.selectedDongMay.size > 0) {
+        const normalizedSelectedDongMay = new Set(
+            Array.from(banHangFilterState.selectedDongMay).map(v => normalizeString(v))
+        );
         filtered = filtered.filter(item => {
             const dongMay = getValue(item, 3); // Dòng Máy at index 3 in BanHang
-            const dongMayStr = String(dongMay);
-            return banHangFilterState.selectedDongMay.has(dongMayStr);
+            const normalizedDongMay = normalizeString(dongMay);
+            return normalizedSelectedDongMay.has(normalizedDongMay);
         });
     }
     
-    // Dung Luong filter
+    // Dung Luong filter (normalize for comparison)
     if (banHangFilterState.selectedDungLuong.size > 0) {
+        const normalizedSelectedDungLuong = new Set(
+            Array.from(banHangFilterState.selectedDungLuong).map(v => normalizeString(v))
+        );
         filtered = filtered.filter(item => {
             const dungLuong = getValue(item, 4); // Dung Lượng at index 4 in BanHang
-            const dungLuongStr = String(dungLuong);
-            return banHangFilterState.selectedDungLuong.has(dungLuongStr);
+            const normalizedDungLuong = normalizeString(dungLuong);
+            return normalizedSelectedDungLuong.has(normalizedDungLuong);
         });
     }
     
@@ -3797,19 +3871,32 @@ async function loadBanHangData() {
 }
 
 function populateBanHangFilterOptions(data) {
-    const dongMaySet = new Set();
-    const dungLuongSet = new Set();
+    // Use Map to store normalized -> original mapping (keep first occurrence for display)
+    const dongMayMap = new Map(); // normalized -> original
+    const dungLuongMap = new Map(); // normalized -> original
     
     data.rows.forEach(item => {
         if (Array.isArray(item)) {
             // item structure: [month, STT, NGÀY BÁN, DÒNG MÁY, DUNG LƯỢNG, MÀU SẮC, IMEI, IMEI V5, ...]
-            if (item[3]) dongMaySet.add(String(item[3])); // Dòng Máy at index 3
-            if (item[4]) dungLuongSet.add(String(item[4])); // Dung Lượng at index 4
+            if (item[3]) {
+                const normalized = normalizeString(item[3]);
+                const display = normalizeForDisplay(item[3]);
+                if (normalized && !dongMayMap.has(normalized)) {
+                    dongMayMap.set(normalized, display);
+                }
+            }
+            if (item[4]) {
+                const normalized = normalizeString(item[4]);
+                const display = normalizeForDisplay(item[4]);
+                if (normalized && !dungLuongMap.has(normalized)) {
+                    dungLuongMap.set(normalized, display);
+                }
+            }
         }
     });
     
-    banHangFilterState.allDongMayOptions = [...dongMaySet].sort();
-    banHangFilterState.allDungLuongOptions = [...dungLuongSet].sort();
+    banHangFilterState.allDongMayOptions = Array.from(dongMayMap.values()).sort();
+    banHangFilterState.allDungLuongOptions = Array.from(dungLuongMap.values()).sort();
     
     console.log('📋 populateBanHangFilterOptions - Dòng Máy options:', banHangFilterState.allDongMayOptions);
     console.log('📋 populateBanHangFilterOptions - Dung Lượng options:', banHangFilterState.allDungLuongOptions);
