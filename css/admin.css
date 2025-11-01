@@ -1939,6 +1939,15 @@
         color: #004085;
     }
 
+    .filter-summary small {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        color: #0056b3;
+        font-size: 14px;
+        font-weight: 500;
+    }
+
     /* Total Records Info */
     .total-records-info {
         margin: 10px 0 15px 0;
@@ -1949,14 +1958,26 @@
     }
 
     .total-records-info small {
+        display: flex;
+        align-items: center;
+        gap: 15px;
         color: #0056b3;
         font-size: 13px;
         font-weight: 500;
     }
 
     .total-records-info span {
-        font-weight: 600;
+        /* font-weight: 600; */
         color: #004085;
+    }
+
+    .info-divider {
+        display: inline-block;
+        width: 3px;
+        height: 20px;
+        background-color: #007bff;
+        flex-shrink: 0;
+        align-self: center;
     }
 
     /* Desktop Responsive */

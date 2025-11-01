@@ -960,14 +960,26 @@ class QLBHAdmin {
             pageInfoEl.textContent = `Trang ${this.currentPage} / ${totalPages} (${data.rows.length} bản ghi)`;
         }
         
-        // Update total records count
+        // Update total records count and total value
         const totalRecordsEl = document.getElementById('nhaphangTotalRecordsCount');
-        if (totalRecordsEl) {
+        const totalValueEl = document.getElementById('nhaphangTotalValueInline');
+        if (totalRecordsEl || totalValueEl) {
             const cachedData = this.getCacheData('nhaphang');
-            if (cachedData && cachedData.data) {
-                totalRecordsEl.textContent = cachedData.data.rows ? cachedData.data.rows.length : 0;
-            } else {
-                totalRecordsEl.textContent = data.rows.length;
+            const sourceData = (cachedData && cachedData.data) ? cachedData.data : data;
+            
+            if (totalRecordsEl) {
+                totalRecordsEl.textContent = sourceData.rows ? sourceData.rows.length : 0;
+            }
+            
+            if (totalValueEl && sourceData.rows && Array.isArray(sourceData.rows)) {
+                const totalValue = sourceData.rows.reduce((sum, item) => {
+                    if (Array.isArray(item)) {
+                        const giaNhap = item[7] || 0; // GIÁ NHẬP at index 7
+                        return sum + (typeof giaNhap === 'number' ? giaNhap : 0);
+                    }
+                    return sum;
+                }, 0);
+                totalValueEl.textContent = this.formatCurrency(totalValue);
             }
         }
         
@@ -1483,11 +1495,17 @@ class QLBHAdmin {
     updateTonKhoBaoCaoSummary(data) {
         const totalQuantityEl = document.getElementById('tonkhoTotalQuantity');
         const totalValueEl = document.getElementById('tonkhoTotalValue');
+        const totalValueInlineEl = document.getElementById('tonkhoTotalValueInline');
+        
         if (totalQuantityEl) {
             totalQuantityEl.textContent = data.totalTonKho || 0;
         }
         if (totalValueEl) {
             totalValueEl.textContent = this.formatCurrency(data.totalValue || 0);
+        }
+        // Update inline total value display
+        if (totalValueInlineEl) {
+            totalValueInlineEl.textContent = this.formatCurrency(data.totalValue || 0);
         }
     }
 
@@ -2894,7 +2912,7 @@ function applyTonKhoMobileFilters() {
         
         window.admin.renderTonKhoTableWithPagination(filteredData);
         window.admin.updateTonKhoPaginationClientSide(filteredData);
-        updateFilterSummary(filtered.length, cachedData.data.rows.length);
+        updateFilterSummary(filtered.length, cachedData.data.rows.length, filteredData);
     } else {
         // Clear filtered data when no filters are active
         tonKhoFilterState.filteredData = null;
@@ -2911,13 +2929,28 @@ function applyTonKhoMobileFilters() {
 }
 
 // Update filter summary
-function updateFilterSummary(filtered, total) {
+function updateFilterSummary(filtered, total, filteredData) {
     const summaryEl = document.getElementById('filterSummary');
     const textEl = document.getElementById('filterSummaryText');
+    const valueEl = document.getElementById('filterSummaryValue');
     
     if (summaryEl && textEl) {
         summaryEl.style.display = 'block';
         textEl.textContent = `Hiển thị ${filtered} / ${total} sản phẩm`;
+        
+        // Calculate total value if filteredData provided
+        if (valueEl && filteredData && filteredData.rows && window.admin) {
+            const totalValue = filteredData.rows.reduce((sum, item) => {
+                if (Array.isArray(item)) {
+                    const giaNhap = item[7] || 0; // GIÁ NHẬP at index 7
+                    return sum + (typeof giaNhap === 'number' ? giaNhap : 0);
+                }
+                return sum;
+            }, 0);
+            valueEl.textContent = `Giá Trị: ${window.admin.formatCurrency(totalValue)}`;
+        } else if (valueEl) {
+            valueEl.textContent = '';
+        }
     }
 }
 
@@ -3298,7 +3331,7 @@ function applyNhapHangMobileFilters() {
         nhapHangFilterState.filteredData = filteredData;
         window.admin.renderNhapHangTableWithPagination(filteredData);
         window.admin.updateNhapHangPaginationClientSide(filteredData);
-        updateNhapFilterSummary(filtered.length, cachedData.data.rows.length);
+        updateNhapFilterSummary(filtered.length, cachedData.data.rows.length, filteredData);
     } else {
         // Clear filtered data when no filters are active
         nhapHangFilterState.filteredData = null;
@@ -3312,13 +3345,28 @@ function applyNhapHangMobileFilters() {
     saveFilterStateToStorage(nhapHangFilterState, 'qlbh_filter_nhaphang');
 }
 
-function updateNhapFilterSummary(filtered, total) {
+function updateNhapFilterSummary(filtered, total, filteredData) {
     const summaryEl = document.getElementById('nhapFilterSummary');
     const textEl = document.getElementById('nhapFilterSummaryText');
+    const valueEl = document.getElementById('nhapFilterSummaryValue');
     
     if (summaryEl && textEl) {
         summaryEl.style.display = 'block';
         textEl.textContent = `Hiển thị ${filtered} / ${total} bản ghi`;
+        
+        // Calculate total value if filteredData provided
+        if (valueEl && filteredData && filteredData.rows && window.admin) {
+            const totalValue = filteredData.rows.reduce((sum, item) => {
+                if (Array.isArray(item)) {
+                    const giaNhap = item[7] || 0; // GIÁ NHẬP at index 7
+                    return sum + (typeof giaNhap === 'number' ? giaNhap : 0);
+                }
+                return sum;
+            }, 0);
+            valueEl.textContent = `Giá Trị: ${window.admin.formatCurrency(totalValue)}`;
+        } else if (valueEl) {
+            valueEl.textContent = '';
+        }
     }
 }
 
