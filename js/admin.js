@@ -1133,8 +1133,8 @@ class QLBHAdmin {
             // item[9] = KHÁCH HÀNG
             // item[10] = empty
             // item[11] = empty
-            // item[12] = GIÁ NHẬP (1300)
-            // item[13] = LỢI NHUẬN (11000)
+            // item[12] = LỢI NHUẬN (11000)
+            // item[13] = GIÁ NHẬP (1300)
             // item[14] = NGÀY NHẬP ("2025-07-31T17:00:00.000Z")
             // item[15] = NHÀ CUNG CẤP ("K/lẻ Nguyễn Thị Hương")
             // item[16] = MÔ TẢ NHẬP ("Viền phẩy ít, có đk,pin 83")
@@ -1170,14 +1170,36 @@ class QLBHAdmin {
             pageInfoEl.textContent = `Trang ${this.currentPage} / ${totalPages} (${data.rows.length} bản ghi)`;
         }
         
-        // Update total records count
+        // Update total records count and totals
         const totalRecordsEl = document.getElementById('banhangTotalRecordsCount');
-        if (totalRecordsEl) {
+        const totalDoanhThuEl = document.getElementById('banhangTotalDoanhThu');
+        const totalGiaVonEl = document.getElementById('banhangTotalGiaVon');
+        const totalLoiNhuanEl = document.getElementById('banhangTotalLoiNhuan');
+        if (totalRecordsEl || totalDoanhThuEl || totalGiaVonEl || totalLoiNhuanEl) {
             const cachedData = this.getCacheData('banhang');
-            if (cachedData && cachedData.data) {
-                totalRecordsEl.textContent = cachedData.data.rows ? cachedData.data.rows.length : 0;
-            } else {
-                totalRecordsEl.textContent = data.rows.length;
+            const sourceData = (cachedData && cachedData.data) ? cachedData.data : data;
+            
+            if (totalRecordsEl) {
+                totalRecordsEl.textContent = sourceData.rows ? sourceData.rows.length : 0;
+            }
+            
+            if ((totalDoanhThuEl || totalGiaVonEl || totalLoiNhuanEl) && sourceData.rows && Array.isArray(sourceData.rows)) {
+                const totals = sourceData.rows.reduce((acc, item) => {
+                    if (Array.isArray(item)) {
+                        const doanhThu = item[8] || 0;   // GIÁ BÁN at index 8
+                        const loiNhuan = item[12] || 0;  // LỢI NHUẬN at index 12
+                        const giaVon = item[13] || 0;    // GIÁ NHẬP at index 13
+                        
+                        acc.doanhThu += (typeof doanhThu === 'number' ? doanhThu : 0);
+                        acc.giaVon += (typeof giaVon === 'number' ? giaVon : 0);
+                        acc.loiNhuan += (typeof loiNhuan === 'number' ? loiNhuan : 0);
+                    }
+                    return acc;
+                }, { doanhThu: 0, giaVon: 0, loiNhuan: 0 });
+                
+                if (totalDoanhThuEl) totalDoanhThuEl.textContent = this.formatCurrency(totals.doanhThu);
+                if (totalGiaVonEl) totalGiaVonEl.textContent = this.formatCurrency(totals.giaVon);
+                if (totalLoiNhuanEl) totalLoiNhuanEl.textContent = this.formatCurrency(totals.loiNhuan);
             }
         }
         
@@ -3811,7 +3833,7 @@ function applyBanHangFilters() {
         banHangFilterState.filteredData = filteredData;
         window.admin.renderBanHangTableWithPagination(filteredData);
         window.admin.updateBanHangPaginationClientSide(filteredData);
-        updateBanHangFilterSummary(filtered.length, cachedData.data.rows.length);
+        updateBanHangFilterSummary(filtered.length, cachedData.data.rows.length, filteredData);
     } else {
         banHangFilterState.filteredData = null;
         window.admin.renderBanHangTableWithPagination(cachedData.data);
@@ -3826,13 +3848,40 @@ function applyBanHangFilters() {
     }
 }
 
-function updateBanHangFilterSummary(filtered, total) {
+function updateBanHangFilterSummary(filtered, total, filteredData) {
     const summaryEl = document.getElementById('banhangFilterSummary');
     const textEl = document.getElementById('banhangFilterSummaryText');
+    const doanhThuEl = document.getElementById('banhangFilterSummaryDoanhThu');
+    const giaVonEl = document.getElementById('banhangFilterSummaryGiaVon');
+    const loiNhuanEl = document.getElementById('banhangFilterSummaryLoiNhuan');
     
     if (summaryEl && textEl) {
         summaryEl.style.display = 'block';
         textEl.textContent = `Hiển thị ${filtered} / ${total} bản ghi`;
+        
+        // Calculate totals if filteredData provided
+        if (filteredData && filteredData.rows && window.admin) {
+            const totals = filteredData.rows.reduce((acc, item) => {
+                if (Array.isArray(item)) {
+                    const doanhThu = item[8] || 0;   // GIÁ BÁN at index 8
+                    const loiNhuan = item[12] || 0;  // LỢI NHUẬN at index 12
+                    const giaVon = item[13] || 0;    // GIÁ NHẬP at index 13
+                    
+                    acc.doanhThu += (typeof doanhThu === 'number' ? doanhThu : 0);
+                    acc.giaVon += (typeof giaVon === 'number' ? giaVon : 0);
+                    acc.loiNhuan += (typeof loiNhuan === 'number' ? loiNhuan : 0);
+                }
+                return acc;
+            }, { doanhThu: 0, giaVon: 0, loiNhuan: 0 });
+            
+            if (doanhThuEl) doanhThuEl.textContent = `Doanh Thu: ${window.admin.formatCurrency(totals.doanhThu)}`;
+            if (giaVonEl) giaVonEl.textContent = `Giá Vốn: ${window.admin.formatCurrency(totals.giaVon)}`;
+            if (loiNhuanEl) loiNhuanEl.textContent = `Lợi Nhuận: ${window.admin.formatCurrency(totals.loiNhuan)}`;
+        } else {
+            if (doanhThuEl) doanhThuEl.textContent = '';
+            if (giaVonEl) giaVonEl.textContent = '';
+            if (loiNhuanEl) loiNhuanEl.textContent = '';
+        }
     }
 }
 
@@ -4198,12 +4247,35 @@ async function loadCustomerSearchData(customerName, months) {
         
         searchState.searchData = searchData;
         
-        // Show total records
+        // Show total records and calculate totals
         const totalRecordsInfo = document.getElementById('customerTotalRecordsInfo');
         const totalRecordsCount = document.getElementById('customerTotalRecordsCount');
+        const totalDoanhThuEl = document.getElementById('customerTotalDoanhThu');
+        const totalGiaVonEl = document.getElementById('customerTotalGiaVon');
+        const totalLoiNhuanEl = document.getElementById('customerTotalLoiNhuan');
         if (totalRecordsInfo && totalRecordsCount) {
             totalRecordsInfo.style.display = 'block';
             totalRecordsCount.textContent = filteredData.length;
+            
+            // Calculate totals
+            if ((totalDoanhThuEl || totalGiaVonEl || totalLoiNhuanEl) && filteredData && Array.isArray(filteredData)) {
+                const totals = filteredData.reduce((acc, item) => {
+                    if (Array.isArray(item)) {
+                        const doanhThu = item[8] || 0;   // GIÁ BÁN at index 8
+                        const loiNhuan = item[12] || 0;  // LỢI NHUẬN at index 12
+                        const giaVon = item[13] || 0;    // GIÁ NHẬP at index 13
+                        
+                        acc.doanhThu += (typeof doanhThu === 'number' ? doanhThu : 0);
+                        acc.giaVon += (typeof giaVon === 'number' ? giaVon : 0);
+                        acc.loiNhuan += (typeof loiNhuan === 'number' ? loiNhuan : 0);
+                    }
+                    return acc;
+                }, { doanhThu: 0, giaVon: 0, loiNhuan: 0 });
+                
+                if (totalDoanhThuEl) totalDoanhThuEl.textContent = window.admin.formatCurrency(totals.doanhThu);
+                if (totalGiaVonEl) totalGiaVonEl.textContent = window.admin.formatCurrency(totals.giaVon);
+                if (totalLoiNhuanEl) totalLoiNhuanEl.textContent = window.admin.formatCurrency(totals.loiNhuan);
+            }
         }
         
         // Render table
