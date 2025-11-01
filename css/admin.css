@@ -1980,6 +1980,30 @@
         align-self: center;
     }
 
+    /* Mobile Responsive for Summary Bars */
+    @media (max-width: 767px) {
+        .filter-summary small,
+        .total-records-info small {
+            flex-wrap: wrap;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .filter-summary,
+        .total-records-info {
+            padding: 8px 12px;
+        }
+        
+        .info-divider {
+            display: none; /* Hide dividers on mobile to save space */
+        }
+        
+        .filter-summary small > span,
+        .total-records-info small > span {
+            white-space: nowrap;
+        }
+    }
+
     /* Desktop Responsive */
     @media (min-width: 768px) {
         /* Fix BaoCao tables on desktop */
