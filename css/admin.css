@@ -653,7 +653,7 @@
     .search-controls-group {
         display: flex;
         gap: 1rem;
-        align-items: flex-end;
+        align-items: center;
     }
 
     .search-filter-item {
@@ -661,14 +661,38 @@
     }
 
     .search-filter-item .mobile-multiselect {
-        height: 70px;
+        height: 48px;
         display: flex;
         align-items: center;
+        background: white;
+        border: 2px solid #dee2e6;
+        border-radius: 8px;
+        padding: 0;
+        transition: all 0.3s;
+        box-sizing: border-box;
+    }
+
+    .search-filter-item .mobile-multiselect:hover {
+        border-color: #007bff;
+        background: #f8f9fa;
     }
 
     .search-filter-item .mobile-multiselect .multiselect-btn {
         height: 48px;
         box-sizing: border-box;
+        border: none;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .search-filter-item .mobile-multiselect .multiselect-btn:hover {
+        background: transparent;
+    }
+
+    /* Override .large-selector height for search module */
+    .search-filter-item .large-selector .multiselect-btn {
+        min-height: 48px;
+        height: 48px;
     }
 
     .search-filter-item .filter-input-group {
@@ -712,10 +736,10 @@
     }
 
     .btn-search-customer {
-        padding: 14px 24px;
+        padding: 0 24px;
         font-size: 15px;
         font-weight: 500;
-        height: 70px;
+        height: 48px;
     }
 
     .search-input {
